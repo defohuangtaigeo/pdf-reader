@@ -611,7 +611,7 @@ function isZH(ch) {
 }
 function isEN(ch) {
   const c = ch.charCodeAt(0);
-  return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||(c>=0x0030&&c<=0x0039)||'.,!?\'"-%/()$€&@#*~=:;+°'.includes(ch);
+  return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||'.,!?\'"-%/()$€&@#*~=:;+°'.includes(ch);
 }
 
 function splitByLanguage(text) {
@@ -646,11 +646,37 @@ function updateVoiceDisplay() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  ARABIC → CHINESE NUMERALS (for TTS naturalness)
+// ═══════════════════════════════════════════════════════════════
+const ARABIC_TO_ZH_DIGIT = '零一二三四五六七八九';
+
+function arabicToChinese(text) {
+  // Convert Arabic digits & decimal point to Chinese characters
+  // Handles: 0-9 → 零-九, . → 點, : → 點 (time)
+  let result = '';
+  for (const ch of text) {
+    const code = ch.charCodeAt(0);
+    if (code >= 0x0030 && code <= 0x0039) {
+      result += ARABIC_TO_ZH_DIGIT[code - 0x0030];
+    } else if (ch === '.' || ch === ':') {
+      result += '點';
+    } else {
+      result += ch;
+    }
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
 //  TTS — Edge TTS (免費, 伺服器端, 含 Retry)
 // ═══════════════════════════════════════════════════════════════
 let ttsFailCount = 0;
 
 async function speakChunk_Edge(text, lang, retryCount = 0) {
+  // Convert Arabic numerals to Chinese for zh chunks
+  if (lang === 'zh') {
+    text = arabicToChinese(text);
+  }
   const MAX_RETRIES = 1;
   try {
     const resp = await fetch('/api/tts', {
