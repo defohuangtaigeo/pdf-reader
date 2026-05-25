@@ -5,6 +5,8 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: python server.py
     healthCheckPath: /health
+    domains:
+      - reader.taigeo.com
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
