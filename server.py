@@ -5,12 +5,24 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse, Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 app = FastAPI(title="語音書 PDF Reader")
 STATIC_DIR = Path(__file__).parent
 app.mount("/pdf", StaticFiles(directory=str(STATIC_DIR)), name="pdf")
+
+# ─── Security Headers Middleware ───
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    return response
 
 SERVER_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 SECRET_KEY = os.environ.get("VOICEBOOK_SECRET", secrets.token_urlsafe(32))
