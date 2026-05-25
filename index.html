@@ -591,9 +591,14 @@ async function parsePDF(pdf) {
     }
     if (currentLine.text.trim()) lines.push(currentLine.text.trim());
     
-    let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 3);
+    let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 1);
     if (paragraphs.length < 2) {
-      paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 2);
+      // Fallback 1: split on sentence-ending punctuation
+      paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 1);
+    }
+    if (paragraphs.length < 2) {
+      // Fallback 2: split on newlines (for slides/tables without clear paragraph breaks)
+      paragraphs = lines.map(l => l.trim()).filter(l => l.length > 1);
     }
     
     for (const para of paragraphs) {
@@ -630,7 +635,9 @@ function isZH(ch) {
 }
 function isEN(ch) {
   const c = ch.charCodeAt(0);
-  return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||'.,!?\'"-%/()$€&@#*~=:;+°'.includes(ch);
+  // Letters A-Z a-z, digits 0-9, common punctuation & symbols
+  return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||(c>=0x0030&&c<=0x0039)
+    ||'.,!?\\'"-%/()$€&@#*~=:;+°'.includes(ch)||ch===' '||ch==='\\t';
 }
 
 function splitByLanguage(text) {
@@ -638,7 +645,7 @@ function splitByLanguage(text) {
   const chunks = [];
   let cur = { text: '', lang: null };
   for (const ch of text) {
-    const l = isZH(ch) ? 'zh' : isEN(ch) ? 'en' : null;
+    const l = isZH(ch) ? 'zh' : isEN(ch) ? 'en' : (cur.lang || null);
     if (l !== null) {
       if (cur.lang === null) { cur.lang = l; cur.text = ch; }
       else if (l === cur.lang) cur.text += ch;
@@ -646,12 +653,12 @@ function splitByLanguage(text) {
     } else cur.text += ch;
   }
   if (cur.text.trim()) chunks.push({text:cur.text.trim(),lang:cur.lang||'en'});
-  // Merge short
+  // Merge short chunks into previous (for stray chars like single letters/digits)
   if (chunks.length<=1) return chunks;
   const res = [];
   for (let i=0;i<chunks.length;i++) {
     const raw = chunks[i].text.replace(/\s/g,'');
-    if (raw.length<=2 && res.length>0) { res[res.length-1].text += ' '+chunks[i].text; }
+    if (raw.length<=1 && res.length>0) { res[res.length-1].text += chunks[i].text; }
     else res.push(chunks[i]);
   }
   return res;
@@ -695,6 +702,20 @@ async function speakChunk_Edge(text, lang, retryCount = 0) {
   // Convert Arabic numerals to Chinese for zh chunks
   if (lang === 'zh') {
     text = arabicToChinese(text);
+  }
+  // Split long text to stay within server limit (4096 chars)
+  if (text.length > 4000) {
+    const mid = Math.floor(text.length / 2);
+    // Split at a natural boundary (space or punctuation)
+    let splitAt = text.lastIndexOf(' ', mid);
+    if (splitAt < mid - 200) splitAt = text.lastIndexOf('。', mid);
+    if (splitAt < mid - 200) splitAt = text.lastIndexOf('.', mid);
+    if (splitAt < mid - 200) splitAt = mid;
+    const part1 = text.substring(0, splitAt).trim();
+    const part2 = text.substring(splitAt).trim();
+    if (part1) { const ok = await speakChunk_Edge(part1, lang, retryCount); if (!ok) return false; }
+    if (part2) return speakChunk_Edge(part2, lang, retryCount);
+    return true;
   }
   const MAX_RETRIES = 1;
   try {
