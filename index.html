@@ -66,12 +66,21 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
 .speed-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0;font-size:11px}
 .speed-row input[type=range]{width:90px;accent-color:var(--accent)}
 .speed-val{font-weight:700;color:var(--accent);min-width:28px;text-align:center}
-.text-display{background:var(--card);border-radius:12px;padding:12px;margin:6px 0;flex:1;overflow-y:auto;max-height:280px;font-size:12px;line-height:1.6}
-.text-display .para{margin-bottom:5px}
-.text-display .para.active{background:rgba(16,185,129,.1);border-radius:4px;padding:4px;margin:0 -4px}
+.text-display{background:var(--card);border-radius:12px;padding:12px;margin:6px 0;flex:1;overflow-y:auto;max-height:280px;font-size:var(--font-size,12px);line-height:1.7;scroll-behavior:smooth}
+.text-display .para{margin-bottom:6px;cursor:pointer;transition:background .15s;padding:3px 4px 3px 10px;border-left:3px solid transparent;border-radius:0 4px 4px 0}
+.text-display .para:hover{background:rgba(255,255,255,.04)}
+.text-display .para.active{background:rgba(16,185,129,.12);border-left-color:var(--accent)}
 .text-display .zh-text{color:var(--zh-color)}
 .text-display .en-text{color:var(--en-color)}
-.text-display .sub-chunk.speaking-chunk{background:rgba(16,185,129,.2);border-radius:2px}
+.text-display .sub-chunk.speaking-chunk{background:rgba(16,185,129,.3);border-bottom:2px solid var(--accent);border-radius:2px;padding:1px 0}
+.text-display .cursor-dot{display:inline-block;width:8px;height:8px;background:var(--accent);border-radius:50%;margin-right:4px;animation:pulse 1s ease-in-out infinite;vertical-align:middle}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+/* Font size controls */
+.font-size-row{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0;font-size:11px}
+.font-size-btn{background:#334155;border:none;color:var(--text);width:32px;height:32px;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;transition:.15s}
+.font-size-btn:hover{background:#475569}
+.font-size-btn:active{transform:scale(.92)}
+.font-size-label{color:var(--muted);min-width:50px;text-align:center}
 .status-text{text-align:center;font-size:11px;color:var(--muted);padding:4px;min-height:20px}
 .file-info{background:var(--card);border-radius:12px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
 .file-info i{font-size:18px;color:var(--accent)}
@@ -204,6 +213,11 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
       <span style="color:var(--muted)">快</span>
       <span class="speed-val" id="speedDisplay">1.0×</span>
     </div>
+    <div class="font-size-row">
+      <button class="font-size-btn" onclick="changeFontSize(-2)"><i class="fas fa-minus"></i></button>
+      <span class="font-size-label" id="fontSizeLabel">12px</span>
+      <button class="font-size-btn" onclick="changeFontSize(2)"><i class="fas fa-plus"></i></button>
+    </div>
     <div class="flex justify-center gap-3 pt-1">
       <span class="wake-badge" id="wakeLockBadge"><i class="fas fa-moon"></i> 螢幕不滅</span>
     </div>
@@ -232,6 +246,7 @@ let state = {
   chunkIdx: 0,
   isPlaying: false,
   speed: 1.0,
+  fontSize: 12,
   pdfName: '',
   pdfBytes: null,
   pdfId: null,
@@ -487,6 +502,10 @@ function toggleSettings() {
 
 function loadSettings() {
   document.getElementById('defaultSource').value = localStorage.getItem('vb_default_source') || 'picker';
+  const savedFontSize = parseInt(localStorage.getItem('vb_fontSize')) || 12;
+  state.fontSize = Math.max(10, Math.min(28, savedFontSize));
+  document.getElementById('textDisplay').style.setProperty('--font-size', state.fontSize + 'px');
+  document.getElementById('fontSizeLabel').textContent = state.fontSize + 'px';
   showStatus('🎤 Edge TTS · 完全免費');
 }
 
@@ -840,19 +859,13 @@ function stopPlayback() {
 
 function nextSegment() {
   if (state.currentIdx < state.segments.length - 1) {
-    state.currentIdx++;
-    stopPlayback(); 
-    if (state.isPlaying) startChunkQueue();
-    else { updateTextHighlight(state.currentIdx); updateProgress(); }
+    jumpToSegment(state.currentIdx + 1);
   }
 }
 
 function prevSegment() {
   if (state.currentIdx > 0) {
-    state.currentIdx--;
-    stopPlayback();
-    if (state.isPlaying) startChunkQueue();
-    else { updateTextHighlight(state.currentIdx); updateProgress(); }
+    jumpToSegment(state.currentIdx - 1);
   }
 }
 
@@ -866,11 +879,32 @@ function seekProgress(e) {
   const pct = (e.clientX - rect.left) / rect.width;
   const idx = Math.floor(pct * state.segments.length);
   if (idx >= 0 && idx < state.segments.length) {
-    state.currentIdx = idx;
-    stopPlayback();
-    if (state.isPlaying) startChunkQueue();
-    else { updateTextHighlight(idx); updateProgress(); }
+    jumpToSegment(idx);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CLICK-TO-JUMP & FONT SIZE
+// ═══════════════════════════════════════════════════════════════
+function jumpToSegment(idx) {
+  if (idx < 0 || idx >= state.segments.length) return;
+  const wasPlaying = state.isPlaying;
+  state.currentIdx = idx;
+  stopPlayback();
+  updateTextHighlight(idx);
+  updateProgress();
+  if (wasPlaying) {
+    startPlayback();
+  }
+}
+
+function changeFontSize(delta) {
+  let newSize = state.fontSize + delta;
+  newSize = Math.max(10, Math.min(28, newSize));
+  state.fontSize = newSize;
+  document.getElementById('textDisplay').style.setProperty('--font-size', newSize + 'px');
+  document.getElementById('fontSizeLabel').textContent = newSize + 'px';
+  try { localStorage.setItem('vb_fontSize', newSize); } catch {}
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -921,14 +955,15 @@ function updateTextHighlight(idx) {
   let html = '';
   state.segments.forEach((seg, i) => {
     const act = i === idx;
-    const m = act ? '▶ ' : '';
+    const cursor = act ? '<span class="cursor-dot"></span>' : '';
+    const clickAttr = ` onclick="jumpToSegment(${i})"`;
     if (seg.chunks && seg.chunks.length > 1) {
-      let ih = m;
+      let ih = '';
       seg.chunks.forEach(ch => { ih += `<span class="${ch.lang==='zh'?'zh-text':'en-text'}">${escapeHtml(ch.text)}</span> `; });
-      html += `<div class="para ${act?'active':''}">${ih}</div>`;
+      html += `<div class="para ${act?'active':''}"${clickAttr}>${cursor}${ih}</div>`;
     } else {
       const lc = seg.lang === 'zh' ? 'zh-text' : 'en-text';
-      html += `<div class="para ${act?'active':''}"><span class="${lc}">${m}${escapeHtml(seg.text)}</span></div>`;
+      html += `<div class="para ${act?'active':''}"${clickAttr}>${cursor}<span class="${lc}">${escapeHtml(seg.text)}</span></div>`;
     }
   });
   c.innerHTML = html;
@@ -942,19 +977,20 @@ function updateChunkHighlight(segIdx, chunkIdx) {
   let html = '';
   state.segments.forEach((seg, i) => {
     const act = i === segIdx;
-    const m = act ? '▶ ' : '';
+    const cursor = act ? '<span class="cursor-dot"></span>' : '';
+    const clickAttr = ` onclick="jumpToSegment(${i})"`;
     if (seg.chunks && seg.chunks.length > 1) {
-      let ih = m;
+      let ih = '';
       seg.chunks.forEach((ch, ci) => {
         const lc = ch.lang === 'zh' ? 'zh-text' : 'en-text';
         const sp = act && ci === chunkIdx ? 'speaking-chunk' : '';
         ih += `<span class="${lc} sub-chunk ${sp}">${escapeHtml(ch.text)}</span> `;
       });
-      html += `<div class="para ${act?'active':''}">${ih}</div>`;
+      html += `<div class="para ${act?'active':''}"${clickAttr}>${cursor}${ih}</div>`;
     } else {
       const lc = seg.lang === 'zh' ? 'zh-text' : 'en-text';
       const sp = act ? 'speaking-chunk' : '';
-      html += `<div class="para ${act?'active':''}"><span class="${lc} ${sp}">${m}${escapeHtml(seg.text)}</span></div>`;
+      html += `<div class="para ${act?'active':''}"${clickAttr}>${cursor}<span class="${lc} ${sp}">${escapeHtml(seg.text)}</span></div>`;
     }
   });
   c.innerHTML = html;
