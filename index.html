@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>語音書 — 中英語音朗讀</title>
+<link rel="manifest" href="manifest.json">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<style>
+:root{--bg:#0f172a;--card:#1e293b;--accent:#10b981;--text:#e2e8f0;--muted:#64748b;--zh-color:#fbbf24;--en-color:#60a5fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+.container{max-width:480px;margin:0 auto;padding:16px;min-height:100dvh;display:flex;flex-direction:column}
+h1{font-size:20px;font-weight:800;text-align:center;padding:12px 0 4px;color:#f1f5f9}
+.sub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:16px}
+.upload-zone{border:2px dashed #334155;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:.3s;background:var(--card);margin-bottom:12px}
+.upload-zone:hover,.upload-zone.active{border-color:var(--accent);background:rgba(16,185,129,.06)}
+.upload-zone i{font-size:36px;color:var(--muted);margin-bottom:8px}
+.upload-zone .label{font-size:13px;font-weight:600}
+.upload-zone .hint{font-size:11px;color:var(--muted);margin-top:4px}
+.file-info{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.file-info i{font-size:22px;color:var(--accent)}
+.file-info .name{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-info .size{font-size:10px;color:var(--muted)}
+.controls{background:var(--card);border-radius:16px;padding:16px;margin:8px 0}
+.progress-container{height:6px;background:#334155;border-radius:3px;margin-bottom:12px;cursor:pointer;position:relative}
+.progress-bar{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .2s}
+.progress-text{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:8px}
+.main-btn-row{display:flex;justify-content:center;gap:16px;margin:10px 0}
+.main-btn{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;transition:.2s}
+.play-btn{background:var(--accent);color:#fff;width:72px;height:72px;font-size:28px}
+.play-btn:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(16,185,129,.3)}
+.play-btn:active{transform:scale(.95)}
+.ctrl-btn{background:#334155;color:var(--text);width:52px;height:52px;font-size:16px}
+.ctrl-btn:hover{background:#475569}
+.speed-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0;font-size:12px}
+.speed-row input[type=range]{width:100px;accent-color:var(--accent)}
+.speed-val{font-weight:700;color:var(--accent);min-width:32px;text-align:center}
+.voice-panel{background:var(--card);border-radius:12px;padding:12px;margin:6px 0;font-size:12px}
+.voice-panel .row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.voice-panel .lang{color:var(--muted);min-width:50px}
+.voice-panel select{background:#0f172a;color:var(--text);border:1px solid #334155;border-radius:6px;padding:4px 6px;font-size:11px;max-width:200px;outline:none;cursor:pointer}
+.voice-panel select:focus{border-color:var(--accent)}
+.status-text{text-align:center;font-size:12px;color:var(--muted);padding:6px;min-height:24px}
+.text-display{background:var(--card);border-radius:12px;padding:14px;margin:8px 0;flex:1;overflow-y:auto;max-height:300px;font-size:13px;line-height:1.7;position:relative}
+.text-display .para{margin-bottom:6px;transition:background .2s}
+.text-display .para.active{background:rgba(16,185,129,.12);border-radius:4px;padding:4px 6px;margin:0 -6px}
+.text-display .zh-text,.text-display .en-text{transition:background .3s;border-radius:2px}
+.text-display .zh-text{color:var(--zh-color)}
+.text-display .en-text{color:var(--en-color)}
+.text-display .speaking{background:rgba(255,255,255,.12)}
+.text-display .sub-chunk{transition:background .3s;border-radius:2px}
+.text-display .sub-chunk.speaking-chunk{background:rgba(16,185,129,.25)}
+/* Loading */
+.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.85);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.loading-overlay.show{display:flex}
+.loading-overlay i{font-size:36px;color:var(--accent);animation:spin 1s linear infinite}
+.loading-overlay .msg{font-size:13px;color:var(--text)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.bottom-bar{position:sticky;bottom:0;background:var(--card);border-radius:16px 16px 0 0;padding:10px 16px 16px;margin:0 -16px;border-top:1px solid #334155;z-index:50}
+.wake-lock-badge{display:inline-flex;align-items:center;gap:4px;background:#1e293b;border-radius:20px;padding:3px 10px;font-size:10px;color:var(--muted);border:1px solid #334155}
+.wake-lock-badge.active{color:var(--accent);border-color:var(--accent)}
+#fileInput{display:none}
+@media(min-width:640px){.container{max-width:600px}}
+</style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+  <i class="fas fa-spinner"></i>
+  <div class="msg" id="loadingMsg">載入中...</div>
+</div>
+
+<div class="container">
+  <!-- Header -->
+  <h1><i class="fas fa-headphones mr-2" style="color:var(--accent)"></i>語音書</h1>
+  <div class="sub">PDF 中英自動切換語音 · 多語段落流暢朗讀</div>
+
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
+    <i class="fas fa-cloud-upload-alt"></i>
+    <div class="label">選擇 PDF 檔案</div>
+    <div class="hint">從 iCloud · Google Drive · 檔案管理選取</div>
+    <div class="hint" style="margin-top:6px;font-size:9px">中英文混合段落自動切換不同人聲</div>
+  </div>
+  <input type="file" id="fileInput" accept=".pdf">
+
+  <!-- Book Info -->
+  <div class="file-info" id="fileInfo" style="display:none">
+    <i class="fas fa-file-pdf"></i>
+    <div><div class="name" id="fileName"></div><div class="size" id="fileSize"></div></div>
+    <button class="ml-auto text-muted" style="background:none;border:none;color:var(--muted);cursor:pointer" onclick="resetApp()"><i class="fas fa-times"></i></button>
+  </div>
+
+  <!-- Voice Selector -->
+  <div class="voice-panel" id="voicePanel" style="display:none">
+    <div class="row">
+      <span class="lang">🇹🇼 中文</span>
+      <select id="voiceZhSelect" onchange="onVoiceSelectChange()"></select>
+    </div>
+    <div class="row">
+      <span class="lang">🇺🇸 英文</span>
+      <select id="voiceEnSelect" onchange="onVoiceSelectChange()"></select>
+    </div>
+    <div class="row" style="border-top:1px solid #334155;margin-top:4px;padding-top:6px;font-size:10px;color:var(--muted)">
+      <span>中英混排段落會<span style="color:var(--zh-color)">自</span><span style="color:var(--en-color)">動</span>切換對應人聲</span>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls" id="controls" style="display:none">
+    <div class="progress-container" id="progressContainer" onclick="seekProgress(event)">
+      <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-text">
+      <span id="currentPos">第 1 段 / 共 0 段</span>
+      <span id="timeRemain">--:--</span>
+    </div>
+
+    <div class="main-btn-row">
+      <button class="main-btn ctrl-btn" onclick="prevSegment()" title="上一段"><i class="fas fa-backward-step"></i></button>
+      <button class="main-btn play-btn" id="playBtn" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
+      <button class="main-btn ctrl-btn" onclick="nextSegment()" title="下一段"><i class="fas fa-forward-step"></i></button>
+    </div>
+
+    <div class="speed-row">
+      <span class="text-xs" style="color:var(--muted)">慢</span>
+      <input type="range" id="speedRange" min="0.5" max="2.0" step="0.1" value="1.0" oninput="onSpeedChange()">
+      <span class="text-xs" style="color:var(--muted)">快</span>
+      <span class="speed-val" id="speedDisplay">1.0×</span>
+    </div>
+
+    <div class="flex justify-center gap-4 pt-1">
+      <span class="wake-lock-badge" id="wakeLockBadge"><i class="fas fa-moon"></i> 螢幕不滅</span>
+      <button class="wake-lock-badge" style="cursor:pointer;background:var(--card)" onclick="reparsePDF()"><i class="fas fa-rotate"></i> 重新解析</button>
+    </div>
+  </div>
+
+  <!-- Status -->
+  <div class="status-text" id="statusText">請選擇 PDF 檔案開始聆聽</div>
+
+  <!-- Text Display -->
+  <div class="text-display" id="textDisplay" style="display:none">
+    <div id="textContent"></div>
+  </div>
+
+  <div class="flex-1"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════════════════
+let state = {
+  segments: [],      // [{text, lang, pageNum, chunks: [{text, lang}]}]
+  currentIdx: 0,
+  chunkQueue: [],    // [{text, lang}] — sub-chunks of current segment for voice switching
+  chunkIdx: 0,       // which sub-chunk we're currently speaking
+  isPlaying: false,
+  speed: 1.0,
+  pdfName: '',
+  pdfBytes: null,
+  voices: { zh: null, en: null },
+  wakeLock: null,
+};
+
+let utterance = null;
+const SYNTH = window.speechSynthesis;
+
+// ═══════════════════════════════════════════════════════════════
+//  LANGUAGE SPLIT — Split mixed text into Chinese/English chunks
+// ═══════════════════════════════════════════════════════════════
+function isChineseChar(ch) {
+  const code = ch.charCodeAt(0);
+  // CJK Unified Ideographs + CJK Symbols + Fullwidth + Bopomofo + Kangxi Radicals
+  return (code >= 0x4E00 && code <= 0x9FFF)
+      || (code >= 0x3000 && code <= 0x303F)
+      || (code >= 0xFF00 && code <= 0xFFEF)
+      || (code >= 0x3100 && code <= 0x312F)
+      || (code >= 0x2F00 && code <= 0x2FDF)
+      || (code >= 0x2000 && code <= 0x206F)  // General punctuation (。、！？)
+      || code === 0x00B7;  // middle dot ·
+}
+
+function isEnglishChar(ch) {
+  const code = ch.charCodeAt(0);
+  return (code >= 0x0041 && code <= 0x005A)  // A-Z
+      || (code >= 0x0061 && code <= 0x007A)  // a-z
+      || (code >= 0x0030 && code <= 0x0039)  // 0-9
+      || ch === '.' || ch === ',' || ch === '!' || ch === '?'
+      || ch === '\'' || ch === '"' || ch === '-' || ch === '/'
+      || ch === '(' || ch === ')' || ch === '%' || ch === '+'
+      || ch === '¥' || ch === '$' || ch === '€'
+      || ch === ':' || ch === ';' || ch === '&' || ch === '@'
+      || ch === '#' || ch === '*' || ch === '~' || ch === '='
+      || code === 0x00B0;  // ° degree
+}
+
+function getCharLang(ch) {
+  if (isChineseChar(ch)) return 'zh';
+  if (isEnglishChar(ch)) return 'en';
+  // Punctuation/space inherits the surrounding language — handled in splitter
+  return null;
+}
+
+/**
+ * Split mixed-language text into chunks, each with a single lang.
+ * E.g.: "Hello 世界 ! This is 中文" → 
+ *   [{text:"Hello", lang:"en"}, {text:"世界", lang:"zh"}, {text:"! This is", lang:"en"}, {text:"中文", lang:"zh"}]
+ * Punctuation and spaces attach to the last non-null language.
+ */
+function splitByLanguage(text) {
+  if (!text) return [];
+  
+  const chunks = [];
+  let current = { text: '', lang: null };
+  
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const lang = getCharLang(ch);
+    
+    if (lang !== null) {
+      // Content character
+      if (current.lang === null) {
+        current.lang = lang;
+        current.text = ch;
+      } else if (lang === current.lang) {
+        current.text += ch;
+      } else {
+        // Language switch!
+        if (current.text.trim()) chunks.push({ text: current.text.trim(), lang: current.lang });
+        current = { text: ch, lang };
+      }
+    } else {
+      // Space / neutral punctuation — attach to current
+      current.text += ch;
+    }
+  }
+  
+  if (current.text.trim()) {
+    chunks.push({ text: current.text.trim(), lang: current.lang || 'en' });
+  }
+  
+  // Merge very short chunks (< 3 letters, or single CJK char) into adjacent ones
+  return mergeShortChunks(chunks);
+}
+
+function mergeShortChunks(chunks) {
+  if (chunks.length <= 1) return chunks;
+  const result = [];
+  let i = 0;
+  while (i < chunks.length) {
+    const cur = chunks[i];
+    const curLen = cur.text.replace(/\s/g, '').length;
+    
+    if (curLen <= 2 && i + 1 < chunks.length && result.length > 0) {
+      // Too short — merge with previous (preferred) or next
+      const merged = result[result.length - 1];
+      merged.text += ' ' + cur.text;
+    } else if (curLen <= 2 && i + 1 < chunks.length && result.length === 0) {
+      // Too short at start — merge with next
+      const next = { ...chunks[i + 1] };
+      next.text = cur.text + ' ' + next.text;
+      result.push(next);
+      i++;
+    } else {
+      result.push(cur);
+    }
+    i++;
+  }
+  return result;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FILE SELECTION
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  await loadPDF(file);
+});
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('active'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('active'));
+uploadZone.addEventListener('drop', async (e) => {
+  e.preventDefault(); uploadZone.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type === 'application/pdf') await loadPDF(file);
+  else showStatus('⚠️ 請選擇 PDF 檔案', true);
+});
+
+async function loadPDF(file) {
+  showLoading('📖 正在讀取 PDF...');
+  state.pdfName = file.name;
+  document.getElementById('fileName').textContent = file.name;
+  document.getElementById('fileSize').textContent = formatSize(file.size);
+  document.getElementById('fileInfo').style.display = 'flex';
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    state.pdfBytes = new Uint8Array(arrayBuffer);
+    const pdf = await pdfjsLib.getDocument({ data: state.pdfBytes, useSystemFonts: true }).promise;
+    const totalPages = pdf.numPages;
+    
+    showLoading(`📄 正在解析 ${totalPages} 頁...`);
+    
+    let allSegments = [];
+    
+    for (let i = 1; i <= totalPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      
+      // Group text items by Y position (same line)
+      const lines = [];
+      const items = textContent.items;
+      let currentLine = { y: -1, text: '' };
+      
+      for (const item of items) {
+        const y = Math.round(item.transform[5] * 10) / 10;
+        const x = item.transform[4];
+        if (currentLine.y === -1) {
+          currentLine.y = y;
+          currentLine.text = item.str;
+        } else if (Math.abs(y - currentLine.y) < 3) {
+          const prevX = currentLine.prevX || x;
+          const gap = x - prevX;
+          currentLine.text += (gap > 5 && currentLine.text) ? ' ' + item.str : item.str;
+          currentLine.prevX = x;
+        } else {
+          if (currentLine.text.trim()) lines.push(currentLine.text.trim());
+          currentLine = { y, text: item.str, prevX: x };
+        }
+      }
+      if (currentLine.text.trim()) lines.push(currentLine.text.trim());
+      
+      const pageText = lines.join('\n');
+      
+      // Split into paragraphs
+      let paragraphs = pageText
+        .split(/\n\s*\n/)
+        .map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+        .filter(p => p.length > 10);
+      
+      // If too few paragraphs, split by sentence endings
+      if (paragraphs.length < 2) {
+        paragraphs = pageText
+          .split(/(?<=[。！？.!?])\s+/)
+          .map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
+          .filter(p => p.length > 8);
+      }
+      
+      for (const para of paragraphs) {
+        const lang = detectLang(para);
+        const chunks = splitByLanguage(para);
+        allSegments.push({
+          text: para,
+          lang,        // primary language for display
+          pageNum: i,
+          chunks,      // sub-chunks for voice switching
+        });
+      }
+    }
+
+    state.segments = allSegments;
+    state.currentIdx = 0;
+
+    try { localStorage.setItem('pdf_last_file', file.name); } catch {}
+
+    renderSegments();
+    showControls();
+    showStatus(`✅ ${totalPages} 頁, ${allSegments.length} 段落`);
+    hideLoading();
+    
+    initVoices();
+  } catch (e) {
+    hideLoading();
+    showStatus('❌ PDF 解析失敗: ' + e.message, true);
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LANGUAGE DETECTION (per-segment display label)
+// ═══════════════════════════════════════════════════════════════
+function detectLang(text) {
+  const zhCount = (text.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g) || []).length;
+  const totalChars = text.replace(/\s/g, '').length;
+  if (totalChars === 0) return 'en';
+  return (zhCount / totalChars) > 0.3 ? 'zh' : 'en';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  VOICES
+// ═══════════════════════════════════════════════════════════════
+function initVoices() {
+  const voices = SYNTH.getVoices();
+  if (voices.length > 0) {
+    populateVoiceSelectors(voices);
+  }
+  SYNTH.onvoiceschanged = () => {
+    populateVoiceSelectors(SYNTH.getVoices());
+  };
+  setTimeout(() => {
+    const v = SYNTH.getVoices();
+    if (v.length > 0) populateVoiceSelectors(v);
+  }, 1000);
+}
+
+function populateVoiceSelectors(voices) {
+  const zhSelect = document.getElementById('voiceZhSelect');
+  const enSelect = document.getElementById('voiceEnSelect');
+  
+  // Save current selections
+  const prevZh = zhSelect.value;
+  const prevEn = enSelect.value;
+  
+  zhSelect.innerHTML = '';
+  enSelect.innerHTML = '';
+  
+  // Default / auto option
+  zhSelect.innerHTML = '<option value="auto">🤖 自動挑選</option>';
+  enSelect.innerHTML = '<option value="auto">🤖 自動挑選</option>';
+  
+  // Group voices by language
+  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
+  const enVoices = voices.filter(v => v.lang.startsWith('en'));
+  
+  // Add separator if mixed
+  const addVoiceOptions = (select, voiceList) => {
+    // Group by lang
+    const grouped = {};
+    for (const v of voiceList) {
+      const key = v.lang;
+      if (!grouped[key]) grouped[key] = [];
+      grouped[key].push(v);
+    }
+    
+    for (const [lang, vlist] of Object.entries(grouped)) {
+      const optGroup = document.createElement('optgroup');
+      optGroup.label = lang;
+      for (const v of vlist) {
+        const opt = document.createElement('option');
+        opt.value = v.name;
+        opt.textContent = `${v.name} ${v.localService ? '📱' : '☁️'}`;
+        optGroup.appendChild(opt);
+      }
+      select.appendChild(optGroup);
+    }
+  };
+  
+  addVoiceOptions(zhSelect, zhVoices);
+  addVoiceOptions(enSelect, enVoices);
+  
+  // Restore selections if possible
+  if (prevZh && [...zhSelect.options].some(o => o.value === prevZh)) zhSelect.value = prevZh;
+  if (prevEn && [...enSelect.options].some(o => o.value === prevEn)) enSelect.value = prevEn;
+  
+  document.getElementById('voicePanel').style.display = 'block';
+  
+  // Apply
+  applyVoiceSelection();
+}
+
+function applyVoiceSelection() {
+  const zhName = document.getElementById('voiceZhSelect').value;
+  const enName = document.getElementById('voiceEnSelect').value;
+  const allVoices = SYNTH.getVoices();
+  
+  if (zhName && zhName !== 'auto') {
+    state.voices.zh = allVoices.find(v => v.name === zhName) || null;
+  } else {
+    // Auto: pick best zh-TW
+    state.voices.zh = allVoices.find(v => v.lang.startsWith('zh-TW') && v.localService)
+      || allVoices.find(v => v.lang.startsWith('zh-TW'))
+      || allVoices.find(v => v.lang.startsWith('zh'))
+      || null;
+  }
+  
+  if (enName && enName !== 'auto') {
+    state.voices.en = allVoices.find(v => v.name === enName) || null;
+  } else {
+    // Auto: pick best en-US
+    state.voices.en = allVoices.find(v => v.lang.startsWith('en-US') && v.name.includes('Premium'))
+      || allVoices.find(v => v.lang.startsWith('en-US') && v.localService)
+      || allVoices.find(v => v.lang.startsWith('en-US'))
+      || allVoices.find(v => v.lang.startsWith('en'))
+      || null;
+  }
+  
+  // Update display
+  const zhLabel = state.voices.zh ? `${state.voices.zh.name}` : '❌ 無中文語音';
+  const enLabel = state.voices.en ? `${state.voices.en.name}` : '❌ 無英文語音';
+  document.getElementById('voiceZhSelect').title = zhLabel;
+  document.getElementById('voiceEnSelect').title = enLabel;
+  
+  console.log('🎤 Voices set:', { zh: state.voices.zh?.name, en: state.voices.en?.name });
+}
+
+function onVoiceSelectChange() {
+  applyVoiceSelection();
+  // If currently playing, restart current segment with new voice
+  if (state.isPlaying && SYNTH.speaking) {
+    SYNTH.cancel();
+    startChunkQueue();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TTS — Multi-voice chaining for mixed-language segments
+// ═══════════════════════════════════════════════════════════════
+
+/**
+ * Queue up sub-chunks for the current segment and start speaking.
+ */
+function startChunkQueue() {
+  const seg = state.segments[state.currentIdx];
+  if (!seg) {
+    finishPlayback();
+    return;
+  }
+  
+  // Use chunks (if available) or wrap whole text as one chunk
+  state.chunkQueue = (seg.chunks && seg.chunks.length > 0) ? seg.chunks : [{ text: seg.text, lang: seg.lang }];
+  state.chunkIdx = 0;
+  
+  speakNextChunk();
+}
+
+function speakNextChunk() {
+  if (state.chunkIdx >= state.chunkQueue.length) {
+    // All chunks done — advance to next segment
+    advanceToNext();
+    return;
+  }
+  
+  const chunk = state.chunkQueue[state.chunkIdx];
+  if (!chunk || !chunk.text.trim()) {
+    state.chunkIdx++;
+    speakNextChunk();
+    return;
+  }
+  
+  const voice = chunk.lang === 'zh' ? state.voices.zh : state.voices.en;
+  const lang = chunk.lang === 'zh' ? 'zh-TW' : 'en-US';
+  
+  SYNTH.cancel();
+  
+  utterance = new SpeechSynthesisUtterance(chunk.text);
+  utterance.lang = lang;
+  utterance.rate = state.speed;
+  utterance.volume = 1;
+  if (voice) utterance.voice = voice;
+  
+  utterance.onstart = () => {
+    updateChunkHighlight(state.currentIdx, state.chunkIdx);
+    const seg = state.segments[state.currentIdx];
+    showStatus(`🇹🇼🇺🇸 第 ${state.currentIdx + 1}/${state.segments.length} 段 · 語音${chunk.lang === 'zh' ? '🇹🇼' : '🇺🇸'}`);
+  };
+  
+  utterance.onend = () => {
+    if (state.isPlaying) {
+      state.chunkIdx++;
+      speakNextChunk();
+    }
+  };
+  
+  utterance.onerror = (e) => {
+    console.error('TTS error:', e);
+    if (state.isPlaying) {
+      state.chunkIdx++;
+      speakNextChunk();
+    }
+  };
+  
+  SYNTH.speak(utterance);
+}
+
+function advanceToNext() {
+  state.currentIdx++;
+  if (state.currentIdx < state.segments.length) {
+    updateProgress();
+    startChunkQueue();
+  } else {
+    finishPlayback();
+  }
+}
+
+function finishPlayback() {
+  state.isPlaying = false;
+  document.getElementById('playIcon').className = 'fas fa-play';
+  showStatus('🏁 朗讀完成！');
+  releaseWakeLock();
+  stopTTSWatchdog();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TTS WATCHDOG (fallback for headless onend bugs)
+// ═══════════════════════════════════════════════════════════════
+let ttsWatchdog = null;
+function startTTSWatchdog() {
+  stopTTSWatchdog();
+  ttsWatchdog = setInterval(() => {
+    if (state.isPlaying && state.segments.length > 0 && !SYNTH.speaking && !SYNTH.pending) {
+      // TTS stopped unexpectedly — try next chunk or segment
+      state.chunkIdx++;
+      if (state.chunkIdx < state.chunkQueue.length) {
+        speakNextChunk();
+      } else {
+        advanceToNext();
+      }
+    }
+  }, 500);
+}
+function stopTTSWatchdog() {
+  if (ttsWatchdog) { clearInterval(ttsWatchdog); ttsWatchdog = null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  PLAYBACK CONTROLS
+// ═══════════════════════════════════════════════════════════════
+function togglePlay() {
+  if (state.segments.length === 0) return;
+  if (state.isPlaying) {
+    pausePlayback();
+  } else {
+    startPlayback();
+  }
+}
+
+function startPlayback() {
+  state.isPlaying = true;
+  document.getElementById('playIcon').className = 'fas fa-pause';
+  
+  if (SYNTH.paused) {
+    SYNTH.resume();
+  } else {
+    startChunkQueue();
+  }
+  
+  requestWakeLock();
+  startTTSWatchdog();
+}
+
+function pausePlayback() {
+  state.isPlaying = false;
+  document.getElementById('playIcon').className = 'fas fa-play';
+  
+  if (SYNTH.speaking) {
+    if (!SYNTH.paused) SYNTH.pause();
+  }
+  
+  releaseWakeLock();
+  stopTTSWatchdog();
+}
+
+function stopPlayback() {
+  state.isPlaying = false;
+  document.getElementById('playIcon').className = 'fas fa-play';
+  SYNTH.cancel();
+  releaseWakeLock();
+}
+
+function nextSegment() {
+  if (state.currentIdx < state.segments.length - 1) {
+    state.currentIdx++;
+    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    else { updateTextHighlight(state.currentIdx); updateProgress(); }
+  }
+}
+
+function prevSegment() {
+  if (state.currentIdx > 0) {
+    state.currentIdx--;
+    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    else { updateTextHighlight(state.currentIdx); updateProgress(); }
+  }
+}
+
+function onSpeedChange() {
+  state.speed = parseFloat(document.getElementById('speedRange').value);
+  document.getElementById('speedDisplay').textContent = state.speed + '×';
+  if (state.isPlaying && SYNTH.speaking) {
+    SYNTH.cancel();
+    startChunkQueue();
+  }
+}
+
+function seekProgress(e) {
+  const rect = document.getElementById('progressContainer').getBoundingClientRect();
+  const pct = (e.clientX - rect.left) / rect.width;
+  const idx = Math.floor(pct * state.segments.length);
+  if (idx >= 0 && idx < state.segments.length) {
+    state.currentIdx = idx;
+    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    else { updateTextHighlight(idx); updateProgress(); }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  WAKE LOCK
+// ═══════════════════════════════════════════════════════════════
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      state.wakeLock = await navigator.wakeLock.request('screen');
+      state.wakeLock.addEventListener('release', () => {
+        document.getElementById('wakeLockBadge').className = 'wake-lock-badge';
+      });
+      document.getElementById('wakeLockBadge').className = 'wake-lock-badge active';
+    }
+  } catch(e) { console.log('Wake lock:', e); }
+}
+function releaseWakeLock() {
+  if (state.wakeLock) {
+    state.wakeLock.release();
+    state.wakeLock = null;
+    document.getElementById('wakeLockBadge').className = 'wake-lock-badge';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  UI UPDATES
+// ═══════════════════════════════════════════════════════════════
+function showControls() {
+  document.getElementById('controls').style.display = 'block';
+  document.getElementById('textDisplay').style.display = 'block';
+  document.getElementById('uploadZone').style.display = 'none';
+}
+
+function showStatus(msg, isError) {
+  const el = document.getElementById('statusText');
+  el.textContent = msg;
+  el.style.color = isError ? '#ef4444' : 'var(--muted)';
+}
+
+function showLoading(msg) {
+  document.getElementById('loadingMsg').textContent = msg;
+  document.getElementById('loadingOverlay').classList.add('show');
+}
+
+function hideLoading() {
+  document.getElementById('loadingOverlay').classList.remove('show');
+}
+
+function updateProgress() {
+  const total = state.segments.length;
+  const current = state.currentIdx + 1;
+  const pct = total > 0 ? (state.currentIdx / total) * 100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('currentPos').textContent = `第 ${current} 段 / 共 ${total} 段`;
+  
+  let remainingChars = 0;
+  for (let i = state.currentIdx; i < total; i++) {
+    remainingChars += state.segments[i].text.length;
+  }
+  const estSeconds = Math.round(remainingChars / (state.speed * 10));
+  const mins = Math.floor(estSeconds / 60);
+  const secs = estSeconds % 60;
+  document.getElementById('timeRemain').textContent = `剩餘 ${mins}:${secs.toString().padStart(2, '0')}`;
+}
+
+function updateTextHighlight(segIdx) {
+  const content = document.getElementById('textContent');
+  let html = '';
+  state.segments.forEach((seg, i) => {
+    const isActive = i === segIdx;
+    const marker = isActive ? '▶ ' : '';
+    
+    if (seg.chunks && seg.chunks.length > 1) {
+      // Display with per-language coloring
+      let innerHtml = marker;
+      for (const chunk of seg.chunks) {
+        const langCls = chunk.lang === 'zh' ? 'zh-text' : 'en-text';
+        innerHtml += `<span class="${langCls}">${escapeHtml(chunk.text)}</span> `;
+      }
+      html += `<div class="para ${isActive ? 'active' : ''}">${innerHtml}</div>`;
+    } else {
+      const langCls = seg.lang === 'zh' ? 'zh-text' : 'en-text';
+      html += `<div class="para ${isActive ? 'active' : ''}"><span class="${langCls}">${marker}${escapeHtml(seg.text)}</span></div>`;
+    }
+  });
+  content.innerHTML = html;
+  
+  const currentEl = content.querySelector('.active');
+  if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function updateChunkHighlight(segIdx, chunkIdx) {
+  // Update progress + highlight
+  updateProgress();
+  
+  const content = document.getElementById('textContent');
+  let html = '';
+  state.segments.forEach((seg, i) => {
+    const isActive = i === segIdx;
+    const marker = isActive ? '▶ ' : '';
+    
+    if (seg.chunks && seg.chunks.length > 1) {
+      let innerHtml = marker;
+      seg.chunks.forEach((chunk, ci) => {
+        const langCls = chunk.lang === 'zh' ? 'zh-text' : 'en-text';
+        const speakingCls = (isActive && ci === chunkIdx) ? 'speaking' : '';
+        innerHtml += `<span class="${langCls} sub-chunk ${speakingCls}">${escapeHtml(chunk.text)}</span> `;
+      });
+      html += `<div class="para ${isActive ? 'active' : ''}">${innerHtml}</div>`;
+    } else {
+      const langCls = seg.lang === 'zh' ? 'zh-text' : 'en-text';
+      const speakingCls = isActive ? 'speaking' : '';
+      html += `<div class="para ${isActive ? 'active' : ''}"><span class="${langCls} ${speakingCls}">${marker}${escapeHtml(seg.text)}</span></div>`;
+    }
+  });
+  content.innerHTML = html;
+  
+  const currentEl = content.querySelector('.active');
+  if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function renderSegments() {
+  updateProgress();
+  updateTextHighlight(state.currentIdx);
+}
+
+function reparsePDF() {
+  if (state.pdfBytes) {
+    stopPlayback();
+    state.currentIdx = 0;
+    const fakeFile = new File([state.pdfBytes], state.pdfName, { type: 'application/pdf' });
+    loadPDF(fakeFile);
+  }
+}
+
+function resetApp() {
+  stopPlayback();
+  state = { segments: [], currentIdx: 0, chunkQueue: [], chunkIdx: 0, isPlaying: false, speed: 1.0, pdfName: '', pdfBytes: null, voices: state.voices, wakeLock: null };
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('textDisplay').style.display = 'none';
+  document.getElementById('uploadZone').style.display = 'block';
+  document.getElementById('fileInfo').style.display = 'none';
+  document.getElementById('fileInput').value = '';
+  showStatus('請選擇 PDF 檔案開始聆聽');
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+  if (e.code === 'ArrowRight') nextSegment();
+  if (e.code === 'ArrowLeft') prevSegment();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════════
+if (SYNTH.getVoices().length > 0) {
+  populateVoiceSelectors(SYNTH.getVoices());
+}
+SYNTH.onvoiceschanged = () => {
+  populateVoiceSelectors(SYNTH.getVoices());
+};
+
+// Page visibility
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden && state.isPlaying) {
+    // Keep playing
+  }
+});
+
+// Save reading position
+setInterval(() => {
+  if (state.segments.length > 0 && state.pdfName) {
+    try {
+      localStorage.setItem('pdf_reader_state', JSON.stringify({
+        pdfName: state.pdfName,
+        currentIdx: state.currentIdx,
+        speed: state.speed,
+        timestamp: Date.now()
+      }));
+    } catch {}
+  }
+}, 5000);
+
+// Restore hint
+try {
+  const saved = JSON.parse(localStorage.getItem('pdf_reader_state'));
+  if (saved && saved.pdfName) {
+    document.getElementById('statusText').textContent = `📌 上次聆聽: ${saved.pdfName}`;
+  }
+} catch {}
+
+console.log('📖 語音書 v2 — 中英自動切換語音');
+</script>
+</body>
+</html>
