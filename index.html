@@ -572,9 +572,9 @@ async function parsePDF(pdf) {
     }
     if (currentLine.text.trim()) lines.push(currentLine.text.trim());
     
-    let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 10);
+    let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 3);
     if (paragraphs.length < 2) {
-      paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 8);
+      paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 2);
     }
     
     for (const para of paragraphs) {
@@ -646,9 +646,12 @@ function updateVoiceDisplay() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  TTS — Edge TTS (免費, 伺服器端)
+//  TTS — Edge TTS (免費, 伺服器端, 含 Retry)
 // ═══════════════════════════════════════════════════════════════
-async function speakChunk_Edge(text, lang) {
+let ttsFailCount = 0;
+
+async function speakChunk_Edge(text, lang, retryCount = 0) {
+  const MAX_RETRIES = 1;
   try {
     const resp = await fetch('/api/tts', {
       method: 'POST',
@@ -657,21 +660,66 @@ async function speakChunk_Edge(text, lang) {
     });
     if (!resp.ok) {
       const err = await resp.text();
-      showStatus('❌ TTS 錯誤: ' + err, true);
+      if (retryCount < MAX_RETRIES) {
+        showStatus(`⚠️ TTS 重試中 (${retryCount+1}/${MAX_RETRIES})...`, true);
+        await new Promise(r => setTimeout(r, 500));
+        return speakChunk_Edge(text, lang, retryCount + 1);
+      }
+      showStatus('❌ TTS 錯誤: ' + err.substring(0, 60), true);
+      ttsFailCount++;
       return false;
     }
     const blob = await resp.blob();
+    if (blob.size < 100) {
+      // Audio too small — likely empty/unintelligible
+      if (retryCount < MAX_RETRIES) {
+        await new Promise(r => setTimeout(r, 300));
+        return speakChunk_Edge(text, lang, retryCount + 1);
+      }
+      ttsFailCount++;
+      return false;
+    }
     const url = URL.createObjectURL(blob);
     return new Promise((resolve) => {
       if (audioElement) { audioElement.pause(); audioElement = null; }
+      const timeout = setTimeout(() => {
+        URL.revokeObjectURL(url);
+        if (retryCount < MAX_RETRIES) {
+          resolve(speakChunk_Edge(text, lang, retryCount + 1));
+        } else {
+          ttsFailCount++;
+          resolve(false);
+        }
+      }, 15000); // 15s timeout per chunk
       const audio = new Audio(url);
       audioElement = audio;
-      audio.onended = () => { URL.revokeObjectURL(url); resolve(true); };
-      audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
-      audio.play().catch(() => resolve(false));
+      audio.onended = () => { clearTimeout(timeout); URL.revokeObjectURL(url); resolve(true); };
+      audio.onerror = () => { clearTimeout(timeout); URL.revokeObjectURL(url); resolve(false); };
+      // Resume AudioContext if suspended (browser autoplay policy)
+      if (typeof AudioContext !== 'undefined' || typeof webkitAudioContext !== 'undefined') {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          if (ctx.state === 'suspended') ctx.resume();
+        } catch(e) {}
+      }
+      audio.play().catch(() => {
+        clearTimeout(timeout);
+        // Autoplay blocked — try once more after user gesture simulation
+        if (retryCount < MAX_RETRIES) {
+          setTimeout(() => resolve(speakChunk_Edge(text, lang, retryCount + 1)), 200);
+        } else {
+          ttsFailCount++;
+          resolve(false);
+        }
+      });
     });
   } catch (e) {
-    showStatus('❌ 連線錯誤: ' + e.message, true);
+    if (retryCount < MAX_RETRIES) {
+      await new Promise(r => setTimeout(r, 500));
+      return speakChunk_Edge(text, lang, retryCount + 1);
+    }
+    showStatus('❌ 連線錯誤: ' + e.message.substring(0, 60), true);
+    ttsFailCount++;
     return false;
   }
 }
@@ -716,9 +764,12 @@ async function speakNextChunk() {
 function finishPlayback() {
   state.isPlaying = false;
   document.getElementById('playIcon').className = 'fas fa-play';
-  showStatus('🏁 朗讀完成！');
+  let msg = '🏁 朗讀完成！';
+  if (ttsFailCount > 0) msg += ` ⚠️ ${ttsFailCount} 段因 TTS 錯誤跳過`;
+  showStatus(msg);
   releaseWakeLock();
   saveProgress();
+  ttsFailCount = 0;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -733,8 +784,17 @@ function togglePlay() {
 async function startPlayback() {
   state.isPlaying = true;
   document.getElementById('playIcon').className = 'fas fa-pause';
-  if (audioElement) { audioElement.play(); }
-  else { await startChunkQueue(); }
+  // If at end, restart
+  if (state.currentIdx >= state.segments.length) {
+    state.currentIdx = 0;
+    if (audioElement) { audioElement.pause(); audioElement = null; }
+    await startChunkQueue();
+  } else if (audioElement && !audioElement.ended) {
+    audioElement.play().catch(() => { audioElement = null; startChunkQueue(); });
+  } else {
+    if (audioElement) { audioElement = null; }
+    await startChunkQueue();
+  }
   requestWakeLock();
 }
 
