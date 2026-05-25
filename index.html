@@ -136,46 +136,21 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
 </div>
 <div class="settings-panel" id="settingsPanel">
   <div class="row">
-    <label>朗讀引擎</label>
-    <select id="ttsEngine" onchange="onEngineChange()">
-      <option value="openai">🤖 AI Premium (OpenAI)</option>
-      <option value="browser">📱 瀏覽器內建</option>
-    </select>
-  </div>
-  <div class="row" id="openaiKeyRow">
-    <label>OpenAI Key</label>
-    <input type="text" id="openaiKeyInput" placeholder="sk-..." value="" onchange="saveOpenAIKey()">
-  </div>
-  <div class="row">
     <label>中文人聲</label>
-    <select id="openaiVoiceZh">
-      <option value="nova">Nova (溫暖女聲)</option>
-      <option value="shimmer">Shimmer (柔和女聲)</option>
-      <option value="alloy">Alloy (中性)</option>
-      <option value="echo">Echo (沉穩男聲)</option>
-      <option value="fable">Fable (英式)</option>
-    </select>
+    <span style="color:var(--zh-color);font-size:12px">🎤 曉辰 (台灣女聲)</span>
   </div>
   <div class="row">
     <label>英文人聲</label>
-    <select id="openaiVoiceEn">
-      <option value="shimmer">Shimmer (柔和女聲)</option>
-      <option value="nova">Nova (溫暖女聲)</option>
-      <option value="alloy">Alloy (中性)</option>
-      <option value="echo">Echo (沉穩男聲)</option>
-      <option value="fable">Fable (英式)</option>
-    </select>
+    <span style="color:var(--en-color);font-size:12px">🎤 Jenny (美國女聲)</span>
   </div>
   <div class="row">
     <label>預設來源</label>
-    <select id="defaultSource">
+    <select id="defaultSource" onchange="saveSettings()">
       <option value="picker">📂 檔案選擇器</option>
-      <option value="gdrive">☁️ Google Drive</option>
     </select>
   </div>
-  <div class="row">
-    <label>Google API Key</label>
-    <input type="text" id="googleApiKey" placeholder="可選: 用於 Drive Picker" value="">
+  <div class="row" style="font-size:10px;color:var(--muted)">
+    <span>✅ Edge TTS · 完全免費 · 無需 API Key</span>
   </div>
   <div style="text-align:right;margin-top:6px">
     <button class="settings-btn outline" onclick="clearLibrary()">🗑 清空書庫</button>
@@ -227,7 +202,6 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
   <div class="file-info">
     <button class="back-btn" onclick="showBookshelf()"><i class="fas fa-arrow-left"></i></button>
     <div><div class="name" id="fileName"></div></div>
-    <span class="engine-badge" id="engineBadge">🤖 AI</span>
   </div>
 
   <div class="voice-panel" id="voicePanel">
@@ -286,15 +260,8 @@ let state = {
   pdfName: '',
   pdfBytes: null,
   pdfId: null,
-  voices: { zh: null, en: null },
   wakeLock: null,
-  ttsEngine: 'openai',
-  openaiKey: '',
-  openaiVoiceZh: 'nova',
-  openaiVoiceEn: 'shimmer',
 };
-let utterance = null;
-let ttsWatchdog = null;
 let audioElement = null;
 
 // ═══════════════════════════════════════════════════════════════
@@ -545,53 +512,12 @@ function toggleSettings() {
 }
 
 function loadSettings() {
-  try {
-    state.openaiKey = localStorage.getItem('vb_openai_key') || '';
-    state.ttsEngine = localStorage.getItem('vb_engine') || 'openai';
-    state.openaiVoiceZh = localStorage.getItem('vb_voice_zh') || 'nova';
-    state.openaiVoiceEn = localStorage.getItem('vb_voice_en') || 'shimmer';
-  } catch {}
-  
-  document.getElementById('openaiKeyInput').value = state.openaiKey;
-  document.getElementById('ttsEngine').value = state.ttsEngine;
-  document.getElementById('openaiVoiceZh').value = state.openaiVoiceZh;
-  document.getElementById('openaiVoiceEn').value = state.openaiVoiceEn;
   document.getElementById('defaultSource').value = localStorage.getItem('vb_default_source') || 'picker';
-  document.getElementById('googleApiKey').value = localStorage.getItem('vb_google_key') || '';
-  
-  onEngineChange();
-}
-
-function saveOpenAIKey() {
-  state.openaiKey = document.getElementById('openaiKeyInput').value.trim();
-  try { localStorage.setItem('vb_openai_key', state.openaiKey); } catch {}
-}
-
-function onEngineChange() {
-  state.ttsEngine = document.getElementById('ttsEngine').value;
-  try { localStorage.setItem('vb_engine', state.ttsEngine); } catch {}
-  const keyRow = document.getElementById('openaiKeyRow');
-  keyRow.style.display = state.ttsEngine === 'openai' ? 'flex' : 'none';
-  
-  // Update voice panels
-  if (state.ttsEngine === 'openai') {
-    state.openaiVoiceZh = document.getElementById('openaiVoiceZh').value;
-    state.openaiVoiceEn = document.getElementById('openaiVoiceEn').value;
-    try { localStorage.setItem('vb_voice_zh', state.openaiVoiceZh); } catch {}
-    try { localStorage.setItem('vb_voice_en', state.openaiVoiceEn); } catch {}
-  }
+  showStatus('🎤 Edge TTS · 完全免費');
 }
 
 function saveSettings() {
-  state.openaiVoiceZh = document.getElementById('openaiVoiceZh').value;
-  state.openaiVoiceEn = document.getElementById('openaiVoiceEn').value;
-  const src = document.getElementById('defaultSource').value;
-  try {
-    localStorage.setItem('vb_voice_zh', state.openaiVoiceZh);
-    localStorage.setItem('vb_voice_en', state.openaiVoiceEn);
-    localStorage.setItem('vb_default_source', src);
-    localStorage.setItem('vb_google_key', document.getElementById('googleApiKey').value.trim());
-  } catch {}
+  try { localStorage.setItem('vb_default_source', document.getElementById('defaultSource').value); } catch {}
 }
 
 async function clearLibrary() {
@@ -620,11 +546,6 @@ async function openBook(id) {
   
   state.pdfBytes = pdfData;
   document.getElementById('fileName').textContent = book.title;
-  
-  // Update engine badge
-  const badge = document.getElementById('engineBadge');
-  badge.textContent = state.ttsEngine === 'openai' ? '🤖 AI' : '📱 瀏覽器';
-  badge.className = 'engine-badge ' + (state.ttsEngine === 'openai' ? 'ai' : 'browser');
   
   // Show player
   document.getElementById('bookshelfView').style.display = 'none';
@@ -747,51 +668,27 @@ function splitByLanguage(text) {
 //  TTS — OpenAI
 // ═══════════════════════════════════════════════════════════════
 function updateVoiceDisplay() {
-  if (state.ttsEngine === 'openai') {
-    document.getElementById('voiceZhDisplay').textContent = state.openaiVoiceZh.charAt(0).toUpperCase() + state.openaiVoiceZh.slice(1);
-    document.getElementById('voiceEnDisplay').textContent = state.openaiVoiceEn.charAt(0).toUpperCase() + state.openaiVoiceEn.slice(1);
-  } else {
-    const v = state.voices;
-    document.getElementById('voiceZhDisplay').textContent = v.zh?.name || '自動';
-    document.getElementById('voiceEnDisplay').textContent = v.en?.name || '自動';
-  }
-  document.getElementById('voicePanel').style.display = 'flex';
-  document.getElementById('voicePanel').style.flexDirection = 'column';
+  document.getElementById('voicePanel').style.display = 'block';
 }
 
-async function speakChunk_OpenAI(text, lang) {
-  const voice = lang === 'zh' ? state.openaiVoiceZh : state.openaiVoiceEn;
-  const key = state.openaiKey;
-  
-  if (!key) {
-    showStatus('⚠️ 請在設定中填入 OpenAI API Key', true);
-    return false;
-  }
-  
+// ═══════════════════════════════════════════════════════════════
+//  TTS — Edge TTS (免費, 伺服器端)
+// ═══════════════════════════════════════════════════════════════
+async function speakChunk_Edge(text, lang) {
   try {
     const resp = await fetch('/api/tts', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-OpenAI-Key': key,
-      },
-      body: JSON.stringify({
-        text: text,
-        voice: voice,
-        speed: state.speed,
-        model: 'tts-1-hd'
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, lang, speed: state.speed }),
     });
-    
     if (!resp.ok) {
       const err = await resp.text();
-      showStatus('❌ OpenAI 錯誤: ' + err, true);
+      showStatus('❌ TTS 錯誤: ' + err, true);
+      if (resp.status === 401) { checkAuth(); }
       return false;
     }
-    
     const blob = await resp.blob();
     const url = URL.createObjectURL(blob);
-    
     return new Promise((resolve) => {
       if (audioElement) { audioElement.pause(); audioElement = null; }
       const audio = new Audio(url);
@@ -804,42 +701,6 @@ async function speakChunk_OpenAI(text, lang) {
     showStatus('❌ 連線錯誤: ' + e.message, true);
     return false;
   }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  TTS — Browser (SpeechSynthesis fallback)
-// ═══════════════════════════════════════════════════════════════
-function initBrowserVoices() {
-  const v = SYNTH.getVoices();
-  if (v.length > 0) pickBrowserVoices(v);
-  SYNTH.onvoiceschanged = () => pickBrowserVoices(SYNTH.getVoices());
-  setTimeout(() => { const w=SYNTH.getVoices(); if(w.length>0) pickBrowserVoices(w); }, 1000);
-}
-
-function pickBrowserVoices(voices) {
-  state.voices.zh = voices.find(v=>v.lang.startsWith('zh-TW')&&v.localService)||voices.find(v=>v.lang.startsWith('zh-TW'))||voices.find(v=>v.lang.startsWith('zh'))||null;
-  state.voices.en = voices.find(v=>v.lang.startsWith('en-US')&&v.name.includes('Premium'))||voices.find(v=>v.lang.startsWith('en-US')&&v.localService)||voices.find(v=>v.lang.startsWith('en-US'))||voices.find(v=>v.lang.startsWith('en'))||null;
-  updateVoiceDisplay();
-}
-
-function speakChunk_Browser(text, lang) {
-  return new Promise((resolve) => {
-    SYNTH.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = lang === 'zh' ? 'zh-TW' : 'en-US';
-    u.rate = state.speed;
-    u.volume = 1;
-    u.voice = lang === 'zh' ? state.voices.zh : state.voices.en;
-    u.onend = () => resolve(true);
-    u.onerror = () => resolve(false);
-    SYNTH.speak(u);
-    utterance = u;
-    // Fallback polling
-    const poll = setInterval(() => {
-      if (!SYNTH.speaking && !SYNTH.pending) { clearInterval(poll); resolve(true); }
-    }, 2000);
-    setTimeout(() => { clearInterval(poll); resolve(true); }, 30000);
-  });
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -863,21 +724,14 @@ async function speakNextChunk() {
     const label = chunk.lang === 'zh' ? '🇹🇼' : '🇺🇸';
     showStatus(`第 ${state.currentIdx+1}/${state.segments.length} 段 ${label}`);
     
-    let ok;
-    if (state.ttsEngine === 'openai') {
-      ok = await speakChunk_OpenAI(chunk.text, chunk.lang);
-    } else {
-      ok = await speakChunk_Browser(chunk.text, chunk.lang);
-    }
-    
-    if (!state.isPlaying) return; // paused
-    if (!ok) { /* skip */ }
+    const ok = await speakChunk_Edge(chunk.text, chunk.lang);
+    if (!state.isPlaying) return;
+    if (!ok) { state.chunkIdx++; continue; }
     
     state.chunkIdx++;
     updateProgress();
   }
   
-  // All chunks done — next segment
   state.currentIdx++;
   if (state.currentIdx < state.segments.length) {
     await startChunkQueue();
@@ -894,19 +748,6 @@ function finishPlayback() {
   saveProgress();
 }
 
-function startTTSWatchdog() {
-  stopTTSWatchdog();
-  ttsWatchdog = setInterval(() => {
-    if (state.isPlaying && state.ttsEngine === 'browser' && !SYNTH.speaking && !SYNTH.pending) {
-      state.chunkIdx++;
-      if (state.chunkIdx < state.chunkQueue.length) speakNextChunk();
-    }
-  }, 500);
-}
-function stopTTSWatchdog() {
-  if (ttsWatchdog) { clearInterval(ttsWatchdog); ttsWatchdog = null; }
-}
-
 // ═══════════════════════════════════════════════════════════════
 //  PLAYBACK CONTROLS
 // ═══════════════════════════════════════════════════════════════
@@ -919,33 +760,22 @@ function togglePlay() {
 async function startPlayback() {
   state.isPlaying = true;
   document.getElementById('playIcon').className = 'fas fa-pause';
-  
   if (audioElement) { audioElement.play(); }
   else { await startChunkQueue(); }
-  
   requestWakeLock();
-  startTTSWatchdog();
 }
 
 function pausePlayback() {
   state.isPlaying = false;
   document.getElementById('playIcon').className = 'fas fa-play';
-  
-  if (state.ttsEngine === 'browser') {
-    if (SYNTH.speaking && !SYNTH.paused) SYNTH.pause();
-  } else {
-    if (audioElement) { audioElement.pause(); }
-  }
-  
+  if (audioElement) { audioElement.pause(); }
   releaseWakeLock();
-  stopTTSWatchdog();
 }
 
 function stopPlayback() {
   state.isPlaying = false;
   document.getElementById('playIcon').className = 'fas fa-play';
-  if (state.ttsEngine === 'browser') SYNTH.cancel();
-  else { if (audioElement) { audioElement.pause(); audioElement = null; } }
+  if (audioElement) { audioElement.pause(); audioElement = null; }
   releaseWakeLock();
 }
 
@@ -1138,22 +968,14 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════════
 loadSettings();
 checkAuth();
-initBrowserVoices();
 renderBookshelf();
 
-// Keyboard
+// Keyboard shortcut
 document.addEventListener('keydown', (e) => {
   if (e.code === 'Space' && document.getElementById('playerView').style.display !== 'none') {
     e.preventDefault(); togglePlay();
   }
 });
-
-// Preload last file hint from old storage
-try {
-  const saved = JSON.parse(localStorage.getItem('pdf_reader_state'));
-  if (saved?.pdfName) showStatus(`📌 上次: ${saved.pdfName}`);
-} catch {}
-
 console.log('📖 語音書 v3 — 書庫 + AI 高品質朗讀');
 </script>
 </body>
