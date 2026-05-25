@@ -90,15 +90,6 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
 @keyframes spin{to{transform:rotate(360deg)}}
 .wake-badge{display:inline-flex;align-items:center;gap:3px;background:#1e293b;border-radius:20px;padding:2px 8px;font-size:9px;color:var(--muted);border:1px solid #334155}
 .wake-badge.active{color:var(--accent);border-color:var(--accent)}
-.engine-badge{font-size:9px;padding:2px 8px;border-radius:10px}
-.engine-badge.ai{background:#1e3a5f;color:#93c5fd}
-.engine-badge.browser{background:#3f1e1e;color:#fca5a5}
-/* Auth bar */
-.auth-bar{display:flex;justify-content:center;align-items:center;margin-bottom:8px;padding:6px 12px;background:var(--card);border-radius:10px;min-height:36px}
-.auth-btn{background:#4285F4;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap}
-.auth-btn.logout{background:#334155;color:var(--text);font-size:10px;padding:3px 8px}
-.auth-btn:hover{opacity:.9}
-.user-avatar{border-radius:50%;width:24px;height:24px;border:2px solid var(--accent)}
 #fileInput{display:none}
 </style>
 </head>
@@ -114,21 +105,6 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
 <!-- ============ HEADER ============ -->
 <h1><i class="fas fa-headphones mr-1" style="color:var(--accent)"></i>語音書</h1>
 <div class="sub">AI 高品質朗讀 · 中英自動切換人聲</div>
-
-<!-- ============ AUTH BAR ============ -->
-<div class="auth-bar" id="authBar">
-  <div id="authLoggedOut" style="display:flex;align-items:center;gap:8px">
-    <span style="font-size:11px;color:var(--muted)">登入以同步書庫</span>
-    <button class="auth-btn" onclick="loginGoogle()">
-      <i class="fab fa-google mr-1"></i>Google 登入
-    </button>
-  </div>
-  <div id="authLoggedIn" style="display:none;align-items:center;gap:8px">
-    <img id="userAvatar" class="user-avatar" src="" alt="" width="24" height="24">
-    <span id="userName" style="font-size:12px;font-weight:600"></span>
-    <button class="auth-btn logout" onclick="logoutGoogle()">登出</button>
-  </div>
-</div>
 
 <!-- ============ SETTINGS ============ -->
 <div class="settings-toggle">
@@ -205,8 +181,8 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
   </div>
 
   <div class="voice-panel" id="voicePanel">
-    <div class="row"><span class="lang">🇹🇼 中文</span><span class="name" id="voiceZhDisplay">Nova</span></div>
-    <div class="row"><span class="lang">🇺🇸 英文</span><span class="name" id="voiceEnDisplay">Shimmer</span></div>
+    <div class="row"><span class="lang">🇹🇼 中文</span><span class="name" id="voiceZhDisplay">曉辰 (台灣口音)</span></div>
+    <div class="row"><span class="lang">🇺🇸 英文</span><span class="name" id="voiceEnDisplay">Jenny (美國女聲)</span></div>
   </div>
 
   <div class="controls">
@@ -248,7 +224,6 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1
 // ═══════════════════════════════════════════════════════════════
 const DB_NAME = 'VoiceBookDB';
 const DB_VER = 1;
-const SYNTH = window.speechSynthesis;
 
 let state = {
   segments: [],
@@ -386,8 +361,7 @@ function switchTab(tab) {
 function showBookshelf() {
   document.getElementById('playerView').style.display = 'none';
   document.getElementById('bookshelfView').style.display = 'block';
-  if (state.isPlaying) { SYNTH.cancel(); state.isPlaying = false; }
-  stopTTSWatchdog();
+  if (state.isPlaying) { state.isPlaying = false; if (audioElement) { audioElement.pause(); audioElement = null; } }
   renderBookshelf();
 }
 
@@ -684,7 +658,6 @@ async function speakChunk_Edge(text, lang) {
     if (!resp.ok) {
       const err = await resp.text();
       showStatus('❌ TTS 錯誤: ' + err, true);
-      if (resp.status === 401) { checkAuth(); }
       return false;
     }
     const blob = await resp.blob();
@@ -913,38 +886,6 @@ function escapeHtml(s) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  GOOGLE OAUTH
-// ═══════════════════════════════════════════════════════════════
-async function checkAuth() {
-  try {
-    const resp = await fetch('/api/me');
-    const data = await resp.json();
-    if (data.authenticated && data.user) {
-      document.getElementById('authLoggedOut').style.display = 'none';
-      document.getElementById('authLoggedIn').style.display = 'flex';
-      document.getElementById('userName').textContent = data.user.name || data.user.email;
-      document.getElementById('userAvatar').src = data.user.picture || '';
-    } else {
-      document.getElementById('authLoggedOut').style.display = 'flex';
-      document.getElementById('authLoggedIn').style.display = 'none';
-    }
-  } catch(e) {
-    console.log('Auth check failed:', e);
-  }
-}
-
-function loginGoogle() {
-  const btn = document.querySelector('.auth-btn');
-  btn.textContent = '⏳ 跳轉中...';
-  btn.disabled = true;
-  window.location.href = '/auth/login';
-}
-
-function logoutGoogle() {
-  window.location.href = '/auth/logout';
-}
-
-function formatSize(bytes) {
 //  SAVE PROGRESS
 // ═══════════════════════════════════════════════════════════════
 async function saveProgress() {
@@ -967,7 +908,6 @@ setInterval(() => {
 //  INIT
 // ═══════════════════════════════════════════════════════════════
 loadSettings();
-checkAuth();
 renderBookshelf();
 
 // Keyboard shortcut
