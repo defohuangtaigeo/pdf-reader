@@ -5,68 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>語音書 — 中英語音朗讀</title>
+<title>語音書 — AI 高品質朗讀</title>
 <link rel="manifest" href="manifest.json">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-<script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 <style>
-:root{--bg:#0f172a;--card:#1e293b;--accent:#10b981;--text:#e2e8f0;--muted:#64748b;--zh-color:#fbbf24;--en-color:#60a5fa}
+:root{--bg:#0b1120;--card:#162033;--accent:#10b981;--text:#e2e8f0;--muted:#64748b;--zh-color:#fbbf24;--en-color:#60a5fa}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,'Noto Sans TC',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
-.container{max-width:480px;margin:0 auto;padding:16px;min-height:100dvh;display:flex;flex-direction:column}
-h1{font-size:20px;font-weight:800;text-align:center;padding:12px 0 4px;color:#f1f5f9}
-.sub{text-align:center;font-size:11px;color:var(--muted);margin-bottom:16px}
-.upload-zone{border:2px dashed #334155;border-radius:16px;padding:40px 20px;text-align:center;cursor:pointer;transition:.3s;background:var(--card);margin-bottom:12px}
-.upload-zone:hover,.upload-zone.active{border-color:var(--accent);background:rgba(16,185,129,.06)}
-.upload-zone i{font-size:36px;color:var(--muted);margin-bottom:8px}
-.upload-zone .label{font-size:13px;font-weight:600}
-.upload-zone .hint{font-size:11px;color:var(--muted);margin-top:4px}
-.file-info{background:var(--card);border-radius:12px;padding:14px;margin-bottom:10px;display:flex;align-items:center;gap:10px}
-.file-info i{font-size:22px;color:var(--accent)}
-.file-info .name{flex:1;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.file-info .size{font-size:10px;color:var(--muted)}
-.controls{background:var(--card);border-radius:16px;padding:16px;margin:8px 0}
-.progress-container{height:6px;background:#334155;border-radius:3px;margin-bottom:12px;cursor:pointer;position:relative}
-.progress-bar{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .2s}
-.progress-text{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:8px}
-.main-btn-row{display:flex;justify-content:center;gap:16px;margin:10px 0}
-.main-btn{width:64px;height:64px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:22px;transition:.2s}
-.play-btn{background:var(--accent);color:#fff;width:72px;height:72px;font-size:28px}
-.play-btn:hover{transform:scale(1.05);box-shadow:0 0 20px rgba(16,185,129,.3)}
-.play-btn:active{transform:scale(.95)}
-.ctrl-btn{background:#334155;color:var(--text);width:52px;height:52px;font-size:16px}
-.ctrl-btn:hover{background:#475569}
-.speed-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:6px 0;font-size:12px}
-.speed-row input[type=range]{width:100px;accent-color:var(--accent)}
-.speed-val{font-weight:700;color:var(--accent);min-width:32px;text-align:center}
-.voice-panel{background:var(--card);border-radius:12px;padding:12px;margin:6px 0;font-size:12px}
-.voice-panel .row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}
+.container{max-width:520px;margin:0 auto;padding:14px;min-height:100dvh}
+h1{font-size:20px;font-weight:800;text-align:center;padding:10px 0 2px;color:#f1f5f9;letter-spacing:1px}
+.sub{text-align:center;font-size:10px;color:var(--muted);margin-bottom:12px}
+/* Bookshelf */
+.bookshelf{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin:10px 0 16px}
+.book-card{background:var(--card);border-radius:12px;padding:12px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.book-card:active{transform:scale(.97)}
+.book-card .icon{font-size:32px;color:var(--accent);text-align:center;margin-bottom:6px}
+.book-card .title{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:2px}
+.book-card .meta{font-size:9px;color:var(--muted)}
+.book-card .progress-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:var(--accent)}
+.book-card .source-badge{font-size:8px;background:#1e3a5f;border-radius:10px;padding:1px 6px;display:inline-block}
+/* Tabs */
+.tabs{display:flex;gap:4px;margin-bottom:12px;background:var(--card);border-radius:12px;padding:3px}
+.tab{flex:1;text-align:center;padding:8px;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;transition:.2s;color:var(--muted)}
+.tab.active{background:var(--accent);color:#fff}
+/* Toolbar */
+.toolbar{display:flex;gap:8px;margin-bottom:10px}
+.toolbar button{flex:1;background:var(--card);border:none;border-radius:10px;padding:12px 8px;color:var(--text);font-size:11px;font-weight:600;cursor:pointer;transition:.2s;display:flex;flex-direction:column;align-items:center;gap:3px}
+.toolbar button i{font-size:18px;color:var(--accent)}
+.toolbar button:active{background:#1e3a5f}
+/* Settings panel */
+.settings-toggle{display:flex;justify-content:center;margin-bottom:4px}
+.settings-toggle button{background:none;border:none;color:var(--muted);font-size:11px;cursor:pointer;padding:4px 12px;border-radius:8px}
+.settings-toggle button:hover{color:var(--text);background:var(--card)}
+.settings-panel{background:var(--card);border-radius:12px;padding:12px;margin-bottom:10px;display:none}
+.settings-panel.show{display:block}
+.settings-panel .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12px}
+.settings-panel .row input[type=text]{background:#0b1120;border:1px solid #334155;border-radius:6px;padding:6px 8px;color:var(--text);font-size:11px;width:220px;outline:none}
+.settings-panel .row input[type=text]:focus{border-color:var(--accent)}
+.settings-panel .row select{background:#0b1120;border:1px solid #334155;border-radius:6px;padding:4px 6px;color:var(--text);font-size:11px;cursor:pointer;outline:none}
+.settings-panel .row label{color:var(--muted);min-width:80px}
+.settings-btn{background:var(--accent);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:10px;cursor:pointer}
+.settings-btn.outline{background:transparent;border:1px solid #334155;color:var(--text)}
+/* Player (existing style adapted) */
+.voice-panel{background:var(--card);border-radius:12px;padding:10px;margin:6px 0;font-size:11px}
+.voice-panel .row{display:flex;justify-content:space-between;align-items:center;padding:2px 0}
 .voice-panel .lang{color:var(--muted);min-width:50px}
-.voice-panel select{background:#0f172a;color:var(--text);border:1px solid #334155;border-radius:6px;padding:4px 6px;font-size:11px;max-width:200px;outline:none;cursor:pointer}
-.voice-panel select:focus{border-color:var(--accent)}
-.status-text{text-align:center;font-size:12px;color:var(--muted);padding:6px;min-height:24px}
-.text-display{background:var(--card);border-radius:12px;padding:14px;margin:8px 0;flex:1;overflow-y:auto;max-height:300px;font-size:13px;line-height:1.7;position:relative}
-.text-display .para{margin-bottom:6px;transition:background .2s}
-.text-display .para.active{background:rgba(16,185,129,.12);border-radius:4px;padding:4px 6px;margin:0 -6px}
-.text-display .zh-text,.text-display .en-text{transition:background .3s;border-radius:2px}
+.voice-panel select{background:#0b1120;color:var(--text);border:1px solid #334155;border-radius:6px;padding:3px 5px;font-size:10px;max-width:180px;outline:none;cursor:pointer}
+.controls{background:var(--card);border-radius:16px;padding:14px;margin:6px 0}
+.progress-container{height:5px;background:#334155;border-radius:3px;margin-bottom:10px;cursor:pointer}
+.progress-bar{height:100%;background:var(--accent);border-radius:3px;width:0%;transition:width .2s}
+.progress-text{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:6px}
+.main-btn-row{display:flex;justify-content:center;gap:14px;margin:8px 0}
+.main-btn{border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.play-btn{background:var(--accent);color:#fff;width:68px;height:68px;font-size:26px}
+.play-btn:hover{transform:scale(1.05)}
+.ctrl-btn{background:#334155;color:var(--text);width:48px;height:48px;font-size:14px}
+.speed-row{display:flex;align-items:center;justify-content:center;gap:8px;margin:4px 0;font-size:11px}
+.speed-row input[type=range]{width:90px;accent-color:var(--accent)}
+.speed-val{font-weight:700;color:var(--accent);min-width:28px;text-align:center}
+.text-display{background:var(--card);border-radius:12px;padding:12px;margin:6px 0;flex:1;overflow-y:auto;max-height:280px;font-size:12px;line-height:1.6}
+.text-display .para{margin-bottom:5px}
+.text-display .para.active{background:rgba(16,185,129,.1);border-radius:4px;padding:4px;margin:0 -4px}
 .text-display .zh-text{color:var(--zh-color)}
 .text-display .en-text{color:var(--en-color)}
-.text-display .speaking{background:rgba(255,255,255,.12)}
-.text-display .sub-chunk{transition:background .3s;border-radius:2px}
-.text-display .sub-chunk.speaking-chunk{background:rgba(16,185,129,.25)}
-/* Loading */
-.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.85);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:10px}
+.text-display .sub-chunk.speaking-chunk{background:rgba(16,185,129,.2);border-radius:2px}
+.status-text{text-align:center;font-size:11px;color:var(--muted);padding:4px;min-height:20px}
+.file-info{background:var(--card);border-radius:12px;padding:10px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.file-info i{font-size:18px;color:var(--accent)}
+.file-info .name{flex:1;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.back-btn{background:none;border:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 8px;border-radius:8px}
+.back-btn:hover{background:var(--card);color:var(--text)}
+.upload-zone{border:2px dashed #334155;border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:.3s;background:var(--card);margin-bottom:8px}
+.upload-zone:hover,.upload-zone.active{border-color:var(--accent);background:rgba(16,185,129,.06)}
+.upload-zone i{font-size:30px;color:var(--muted);margin-bottom:6px}
+.upload-zone .label{font-size:12px;font-weight:600}
+.upload-zone .hint{font-size:10px;color:var(--muted);margin-top:3px}
+.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(11,17,32,.88);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:8px}
 .loading-overlay.show{display:flex}
-.loading-overlay i{font-size:36px;color:var(--accent);animation:spin 1s linear infinite}
-.loading-overlay .msg{font-size:13px;color:var(--text)}
+.loading-overlay i{font-size:32px;color:var(--accent);animation:spin 1s linear infinite}
+.loading-overlay .msg{font-size:12px;color:var(--text)}
 @keyframes spin{to{transform:rotate(360deg)}}
-.bottom-bar{position:sticky;bottom:0;background:var(--card);border-radius:16px 16px 0 0;padding:10px 16px 16px;margin:0 -16px;border-top:1px solid #334155;z-index:50}
-.wake-lock-badge{display:inline-flex;align-items:center;gap:4px;background:#1e293b;border-radius:20px;padding:3px 10px;font-size:10px;color:var(--muted);border:1px solid #334155}
-.wake-lock-badge.active{color:var(--accent);border-color:var(--accent)}
+.wake-badge{display:inline-flex;align-items:center;gap:3px;background:#1e293b;border-radius:20px;padding:2px 8px;font-size:9px;color:var(--muted);border:1px solid #334155}
+.wake-badge.active{color:var(--accent);border-color:var(--accent)}
+.engine-badge{font-size:9px;padding:2px 8px;border-radius:10px}
+.engine-badge.ai{background:#1e3a5f;color:#93c5fd}
+.engine-badge.browser{background:#3f1e1e;color:#fca5a5}
 #fileInput{display:none}
-@media(min-width:640px){.container{max-width:600px}}
 </style>
 </head>
 <body>
@@ -76,44 +103,118 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:12px 0 4px;color:#f1
   <div class="msg" id="loadingMsg">載入中...</div>
 </div>
 
-<div class="container">
-  <!-- Header -->
-  <h1><i class="fas fa-headphones mr-2" style="color:var(--accent)"></i>語音書</h1>
-  <div class="sub">PDF 中英自動切換語音 · 多語段落流暢朗讀</div>
+<div class="container" id="app">
 
-  <!-- Upload Zone -->
-  <div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileInput').click()">
-    <i class="fas fa-cloud-upload-alt"></i>
-    <div class="label">選擇 PDF 檔案</div>
-    <div class="hint">從 iCloud · Google Drive · 檔案管理選取</div>
-    <div class="hint" style="margin-top:6px;font-size:9px">中英文混合段落自動切換不同人聲</div>
+<!-- ============ HEADER ============ -->
+<h1><i class="fas fa-headphones mr-1" style="color:var(--accent)"></i>語音書</h1>
+<div class="sub">AI 高品質朗讀 · 中英自動切換人聲</div>
+
+<!-- ============ SETTINGS ============ -->
+<div class="settings-toggle">
+  <button onclick="toggleSettings()"><i class="fas fa-cog mr-1"></i>設定</button>
+</div>
+<div class="settings-panel" id="settingsPanel">
+  <div class="row">
+    <label>朗讀引擎</label>
+    <select id="ttsEngine" onchange="onEngineChange()">
+      <option value="openai">🤖 AI Premium (OpenAI)</option>
+      <option value="browser">📱 瀏覽器內建</option>
+    </select>
   </div>
-  <input type="file" id="fileInput" accept=".pdf">
+  <div class="row" id="openaiKeyRow">
+    <label>OpenAI Key</label>
+    <input type="text" id="openaiKeyInput" placeholder="sk-..." value="" onchange="saveOpenAIKey()">
+  </div>
+  <div class="row">
+    <label>中文人聲</label>
+    <select id="openaiVoiceZh">
+      <option value="nova">Nova (溫暖女聲)</option>
+      <option value="shimmer">Shimmer (柔和女聲)</option>
+      <option value="alloy">Alloy (中性)</option>
+      <option value="echo">Echo (沉穩男聲)</option>
+      <option value="fable">Fable (英式)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>英文人聲</label>
+    <select id="openaiVoiceEn">
+      <option value="shimmer">Shimmer (柔和女聲)</option>
+      <option value="nova">Nova (溫暖女聲)</option>
+      <option value="alloy">Alloy (中性)</option>
+      <option value="echo">Echo (沉穩男聲)</option>
+      <option value="fable">Fable (英式)</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>預設來源</label>
+    <select id="defaultSource">
+      <option value="picker">📂 檔案選擇器</option>
+      <option value="gdrive">☁️ Google Drive</option>
+    </select>
+  </div>
+  <div class="row">
+    <label>Google API Key</label>
+    <input type="text" id="googleApiKey" placeholder="可選: 用於 Drive Picker" value="">
+  </div>
+  <div style="text-align:right;margin-top:6px">
+    <button class="settings-btn outline" onclick="clearLibrary()">🗑 清空書庫</button>
+  </div>
+</div>
 
-  <!-- Book Info -->
-  <div class="file-info" id="fileInfo" style="display:none">
-    <i class="fas fa-file-pdf"></i>
-    <div><div class="name" id="fileName"></div><div class="size" id="fileSize"></div></div>
-    <button class="ml-auto text-muted" style="background:none;border:none;color:var(--muted);cursor:pointer" onclick="resetApp()"><i class="fas fa-times"></i></button>
+<!-- ============ BOOKSHELF VIEW ============ -->
+<div id="bookshelfView">
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('books')" id="tabBooks">📚 書庫</div>
+    <div class="tab" onclick="switchTab('drive')" id="tabDrive">☁️ Google Drive</div>
   </div>
 
-  <!-- Voice Selector -->
-  <div class="voice-panel" id="voicePanel" style="display:none">
-    <div class="row">
-      <span class="lang">🇹🇼 中文</span>
-      <select id="voiceZhSelect" onchange="onVoiceSelectChange()"></select>
-    </div>
-    <div class="row">
-      <span class="lang">🇺🇸 英文</span>
-      <select id="voiceEnSelect" onchange="onVoiceSelectChange()"></select>
-    </div>
-    <div class="row" style="border-top:1px solid #334155;margin-top:4px;padding-top:6px;font-size:10px;color:var(--muted)">
-      <span>中英混排段落會<span style="color:var(--zh-color)">自</span><span style="color:var(--en-color)">動</span>切換對應人聲</span>
-    </div>
+  <div class="toolbar">
+    <button onclick="addFromFile()"><i class="fas fa-file-upload"></i>從檔案</button>
+    <button onclick="addFromUrl()"><i class="fas fa-link"></i>從連結</button>
+    <button onclick="openDrivePicker()" id="driveBtn"><i class="fab fa-google-drive"></i>Google Drive</button>
   </div>
 
-  <!-- Controls -->
-  <div class="controls" id="controls" style="display:none">
+  <div id="booksContent">
+    <div id="emptyLibrary" style="text-align:center;padding:40px 20px;color:var(--muted);font-size:13px">
+      <i class="fas fa-book-open" style="font-size:40px;margin-bottom:10px;color:#334155"></i>
+      <div>書庫是空的</div>
+      <div style="font-size:11px;margin-top:4px">點擊上方按鈕加入 PDF</div>
+    </div>
+    <div class="bookshelf" id="bookshelf"></div>
+  </div>
+
+  <div id="driveContent" style="display:none">
+    <div style="text-align:center;padding:30px;color:var(--muted);font-size:12px">
+      <i class="fab fa-google-drive" style="font-size:36px;margin-bottom:8px;color:#4285F4"></i>
+      <div>瀏覽 Google Drive 中的 PDF</div>
+      <button class="settings-btn" style="margin-top:10px;padding:8px 20px;font-size:12px" onclick="openDrivePicker()">
+        <i class="fab fa-google-drive mr-1"></i>開啟 Google Drive
+      </button>
+      <div style="margin-top:20px;font-size:10px;padding:12px;background:var(--card);border-radius:8px">
+        <div style="font-weight:600;margin-bottom:4px">⚙ 設定方式</div>
+        <div>1. 前往 <a href="https://console.cloud.google.com/" target="_blank" style="color:var(--accent)">Google Cloud Console</a></div>
+        <div>2. 啟用 Google Drive API</div>
+        <div>3. 建立 API Key → 貼入設定</div>
+        <div style="margin-top:6px">或直接<a href="#" onclick="addFromUrl()" style="color:var(--accent)">貼上分享連結</a></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PLAYER VIEW ============ -->
+<div id="playerView" style="display:none">
+  <div class="file-info">
+    <button class="back-btn" onclick="showBookshelf()"><i class="fas fa-arrow-left"></i></button>
+    <div><div class="name" id="fileName"></div></div>
+    <span class="engine-badge" id="engineBadge">🤖 AI</span>
+  </div>
+
+  <div class="voice-panel" id="voicePanel">
+    <div class="row"><span class="lang">🇹🇼 中文</span><span class="name" id="voiceZhDisplay">Nova</span></div>
+    <div class="row"><span class="lang">🇺🇸 英文</span><span class="name" id="voiceEnDisplay">Shimmer</span></div>
+  </div>
+
+  <div class="controls">
     <div class="progress-container" id="progressContainer" onclick="seekProgress(event)">
       <div class="progress-bar" id="progressBar"></div>
     </div>
@@ -121,471 +222,644 @@ h1{font-size:20px;font-weight:800;text-align:center;padding:12px 0 4px;color:#f1
       <span id="currentPos">第 1 段 / 共 0 段</span>
       <span id="timeRemain">--:--</span>
     </div>
-
     <div class="main-btn-row">
-      <button class="main-btn ctrl-btn" onclick="prevSegment()" title="上一段"><i class="fas fa-backward-step"></i></button>
+      <button class="main-btn ctrl-btn" onclick="prevSegment()"><i class="fas fa-backward-step"></i></button>
       <button class="main-btn play-btn" id="playBtn" onclick="togglePlay()"><i class="fas fa-play" id="playIcon"></i></button>
-      <button class="main-btn ctrl-btn" onclick="nextSegment()" title="下一段"><i class="fas fa-forward-step"></i></button>
+      <button class="main-btn ctrl-btn" onclick="nextSegment()"><i class="fas fa-forward-step"></i></button>
     </div>
-
     <div class="speed-row">
-      <span class="text-xs" style="color:var(--muted)">慢</span>
+      <span style="color:var(--muted)">慢</span>
       <input type="range" id="speedRange" min="0.5" max="2.0" step="0.1" value="1.0" oninput="onSpeedChange()">
-      <span class="text-xs" style="color:var(--muted)">快</span>
+      <span style="color:var(--muted)">快</span>
       <span class="speed-val" id="speedDisplay">1.0×</span>
     </div>
-
-    <div class="flex justify-center gap-4 pt-1">
-      <span class="wake-lock-badge" id="wakeLockBadge"><i class="fas fa-moon"></i> 螢幕不滅</span>
-      <button class="wake-lock-badge" style="cursor:pointer;background:var(--card)" onclick="reparsePDF()"><i class="fas fa-rotate"></i> 重新解析</button>
+    <div class="flex justify-center gap-3 pt-1">
+      <span class="wake-badge" id="wakeLockBadge"><i class="fas fa-moon"></i> 螢幕不滅</span>
     </div>
   </div>
 
-  <!-- Status -->
-  <div class="status-text" id="statusText">請選擇 PDF 檔案開始聆聽</div>
-
-  <!-- Text Display -->
-  <div class="text-display" id="textDisplay" style="display:none">
-    <div id="textContent"></div>
-  </div>
-
-  <div class="flex-1"></div>
+  <div class="status-text" id="statusText">就緒</div>
+  <div class="text-display" id="textDisplay"><div id="textContent"></div></div>
 </div>
+
+</div>
+
+<input type="file" id="fileInput" accept=".pdf" multiple>
+<input type="file" id="folderInput" webkitdirectory style="display:none">
 
 <script>
 // ═══════════════════════════════════════════════════════════════
-//  STATE
+//  CONSTS & STATE
 // ═══════════════════════════════════════════════════════════════
+const DB_NAME = 'VoiceBookDB';
+const DB_VER = 1;
+const SYNTH = window.speechSynthesis;
+
 let state = {
-  segments: [],      // [{text, lang, pageNum, chunks: [{text, lang}]}]
+  segments: [],
   currentIdx: 0,
-  chunkQueue: [],    // [{text, lang}] — sub-chunks of current segment for voice switching
-  chunkIdx: 0,       // which sub-chunk we're currently speaking
+  chunkQueue: [],
+  chunkIdx: 0,
   isPlaying: false,
   speed: 1.0,
   pdfName: '',
   pdfBytes: null,
+  pdfId: null,
   voices: { zh: null, en: null },
   wakeLock: null,
+  ttsEngine: 'openai',
+  openaiKey: '',
+  openaiVoiceZh: 'nova',
+  openaiVoiceEn: 'shimmer',
 };
-
 let utterance = null;
-const SYNTH = window.speechSynthesis;
+let ttsWatchdog = null;
+let audioElement = null;
 
 // ═══════════════════════════════════════════════════════════════
-//  LANGUAGE SPLIT — Split mixed text into Chinese/English chunks
+//  INDEXEDDB — Persist library
 // ═══════════════════════════════════════════════════════════════
-function isChineseChar(ch) {
-  const code = ch.charCodeAt(0);
-  // CJK Unified Ideographs + CJK Symbols + Fullwidth + Bopomofo + Kangxi Radicals
-  return (code >= 0x4E00 && code <= 0x9FFF)
-      || (code >= 0x3000 && code <= 0x303F)
-      || (code >= 0xFF00 && code <= 0xFFEF)
-      || (code >= 0x3100 && code <= 0x312F)
-      || (code >= 0x2F00 && code <= 0x2FDF)
-      || (code >= 0x2000 && code <= 0x206F)  // General punctuation (。、！？)
-      || code === 0x00B7;  // middle dot ·
-}
-
-function isEnglishChar(ch) {
-  const code = ch.charCodeAt(0);
-  return (code >= 0x0041 && code <= 0x005A)  // A-Z
-      || (code >= 0x0061 && code <= 0x007A)  // a-z
-      || (code >= 0x0030 && code <= 0x0039)  // 0-9
-      || ch === '.' || ch === ',' || ch === '!' || ch === '?'
-      || ch === '\'' || ch === '"' || ch === '-' || ch === '/'
-      || ch === '(' || ch === ')' || ch === '%' || ch === '+'
-      || ch === '¥' || ch === '$' || ch === '€'
-      || ch === ':' || ch === ';' || ch === '&' || ch === '@'
-      || ch === '#' || ch === '*' || ch === '~' || ch === '='
-      || code === 0x00B0;  // ° degree
-}
-
-function getCharLang(ch) {
-  if (isChineseChar(ch)) return 'zh';
-  if (isEnglishChar(ch)) return 'en';
-  // Punctuation/space inherits the surrounding language — handled in splitter
-  return null;
-}
-
-/**
- * Split mixed-language text into chunks, each with a single lang.
- * E.g.: "Hello 世界 ! This is 中文" → 
- *   [{text:"Hello", lang:"en"}, {text:"世界", lang:"zh"}, {text:"! This is", lang:"en"}, {text:"中文", lang:"zh"}]
- * Punctuation and spaces attach to the last non-null language.
- */
-function splitByLanguage(text) {
-  if (!text) return [];
-  
-  const chunks = [];
-  let current = { text: '', lang: null };
-  
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    const lang = getCharLang(ch);
-    
-    if (lang !== null) {
-      // Content character
-      if (current.lang === null) {
-        current.lang = lang;
-        current.text = ch;
-      } else if (lang === current.lang) {
-        current.text += ch;
-      } else {
-        // Language switch!
-        if (current.text.trim()) chunks.push({ text: current.text.trim(), lang: current.lang });
-        current = { text: ch, lang };
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains('books')) {
+        const store = db.createObjectStore('books', { keyPath: 'id' });
+        store.createIndex('title', 'title', { unique: false });
+        store.createIndex('addedAt', 'addedAt', { unique: false });
       }
-    } else {
-      // Space / neutral punctuation — attach to current
-      current.text += ch;
-    }
-  }
-  
-  if (current.text.trim()) {
-    chunks.push({ text: current.text.trim(), lang: current.lang || 'en' });
-  }
-  
-  // Merge very short chunks (< 3 letters, or single CJK char) into adjacent ones
-  return mergeShortChunks(chunks);
+      if (!db.objectStoreNames.contains('pdfData')) {
+        db.createObjectStore('pdfData', { keyPath: 'id' });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
 }
 
-function mergeShortChunks(chunks) {
-  if (chunks.length <= 1) return chunks;
-  const result = [];
-  let i = 0;
-  while (i < chunks.length) {
-    const cur = chunks[i];
-    const curLen = cur.text.replace(/\s/g, '').length;
-    
-    if (curLen <= 2 && i + 1 < chunks.length && result.length > 0) {
-      // Too short — merge with previous (preferred) or next
-      const merged = result[result.length - 1];
-      merged.text += ' ' + cur.text;
-    } else if (curLen <= 2 && i + 1 < chunks.length && result.length === 0) {
-      // Too short at start — merge with next
-      const next = { ...chunks[i + 1] };
-      next.text = cur.text + ' ' + next.text;
-      result.push(next);
-      i++;
-    } else {
-      result.push(cur);
-    }
-    i++;
-  }
-  return result;
+async function dbGetAllBooks() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('books', 'readonly');
+    const store = tx.objectStore('books');
+    const req = store.index('addedAt').openCursor(null, 'prev');
+    const books = [];
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor) { books.push(cursor.value); cursor.continue(); }
+      else resolve(books);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbSaveBook(book) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['books', 'pdfData'], 'readwrite');
+    tx.objectStore('books').put(book);
+    if (book.pdfData) tx.objectStore('pdfData').put({ id: book.id, data: book.pdfData });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbDeleteBook(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['books', 'pdfData'], 'readwrite');
+    tx.objectStore('books').delete(id);
+    tx.objectStore('pdfData').delete(id);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+async function dbGetPdfData(id) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('pdfData', 'readonly');
+    const req = tx.objectStore('pdfData').get(id);
+    req.onsuccess = () => resolve(req.result?.data || null);
+    req.onerror = () => reject(req.error);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  FILE SELECTION
+//  BOOKSHELF UI
 // ═══════════════════════════════════════════════════════════════
+async function renderBookshelf() {
+  const books = await dbGetAllBooks();
+  const shelf = document.getElementById('bookshelf');
+  const empty = document.getElementById('emptyLibrary');
+  
+  if (books.length === 0) {
+    shelf.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+  
+  shelf.innerHTML = books.map(b => {
+    const pct = b.progress?.currentIdx > 0 && b.segments ? 
+      Math.round((b.progress.currentIdx / b.segments) * 100) : 0;
+    const hasProgress = pct > 0;
+    return `<div class="book-card" onclick="openBook('${b.id}')">
+      <div class="icon"><i class="fas fa-file-pdf"></i></div>
+      <div class="title">${escapeHtml(b.title)}</div>
+      <div class="meta">
+        ${b.source === 'gdrive' ? '<span class="source-badge">☁️Drive</span>' : '<span class="source-badge">📂本機</span>'}
+        ${hasProgress ? `<span style="color:var(--accent);font-size:9px;margin-left:4px">${pct}%</span>` : ''}
+        ${b.pageCount ? `<span style="margin-left:4px">${b.pageCount}p</span>` : ''}
+      </div>
+      ${hasProgress ? '<div class="progress-dot"></div>' : ''}
+      <div style="font-size:8px;color:var(--muted);margin-top:3px">${fmtDate(b.lastRead)}</div>
+    </div>`;
+  }).join('');
+}
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return '今天';
+  const diff = Math.round((now - d) / 86400000);
+  return diff <= 7 ? `${diff}天前` : `${d.getMonth()+1}/${d.getDate()}`;
+}
+
+function switchTab(tab) {
+  document.getElementById('tabBooks').className = tab === 'books' ? 'tab active' : 'tab';
+  document.getElementById('tabDrive').className = tab === 'drive' ? 'tab active' : 'tab';
+  document.getElementById('booksContent').style.display = tab === 'books' ? 'block' : 'none';
+  document.getElementById('driveContent').style.display = tab === 'drive' ? 'block' : 'none';
+}
+
+function showBookshelf() {
+  document.getElementById('playerView').style.display = 'none';
+  document.getElementById('bookshelfView').style.display = 'block';
+  if (state.isPlaying) { SYNTH.cancel(); state.isPlaying = false; }
+  stopTTSWatchdog();
+  renderBookshelf();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  ADD PDFs
+// ═══════════════════════════════════════════════════════════════
+function addFromFile() {
+  document.getElementById('fileInput').click();
+}
+
+function addFromUrl() {
+  const url = prompt('貼上 PDF 網址 (Google Drive 分享連結或直接 PDF 網址):');
+  if (!url) return;
+  importFromUrl(url);
+}
+
 document.getElementById('fileInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  await loadPDF(file);
+  const files = Array.from(e.target.files);
+  for (const file of files) {
+    if (file.type === 'application/pdf') await importFile(file);
+  }
+  e.target.value = '';
+  renderBookshelf();
 });
 
-const uploadZone = document.getElementById('uploadZone');
-uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('active'); });
-uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('active'));
-uploadZone.addEventListener('drop', async (e) => {
-  e.preventDefault(); uploadZone.classList.remove('active');
-  const file = e.dataTransfer.files[0];
-  if (file && file.type === 'application/pdf') await loadPDF(file);
-  else showStatus('⚠️ 請選擇 PDF 檔案', true);
-});
+async function importFile(file) {
+  showLoading('📖 匯入 ' + file.name);
+  const arrayBuffer = await file.arrayBuffer();
+  const id = 'book_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const book = {
+    id, title: file.name.replace(/\.pdf$/i, ''),
+    addedAt: Date.now(), lastRead: Date.now(),
+    source: 'local', size: file.size,
+    pageCount: 0, progress: { currentIdx: 0, speed: 1.0 },
+    pdfData: new Uint8Array(arrayBuffer),
+  };
+  await dbSaveBook(book);
+  hideLoading();
+  openBook(id);
+}
 
-async function loadPDF(file) {
-  showLoading('📖 正在讀取 PDF...');
-  state.pdfName = file.name;
-  document.getElementById('fileName').textContent = file.name;
-  document.getElementById('fileSize').textContent = formatSize(file.size);
-  document.getElementById('fileInfo').style.display = 'flex';
-
+async function importFromUrl(url) {
+  showLoading('🌐 下載中...');
   try {
-    const arrayBuffer = await file.arrayBuffer();
-    state.pdfBytes = new Uint8Array(arrayBuffer);
-    const pdf = await pdfjsLib.getDocument({ data: state.pdfBytes, useSystemFonts: true }).promise;
-    const totalPages = pdf.numPages;
-    
-    showLoading(`📄 正在解析 ${totalPages} 頁...`);
-    
-    let allSegments = [];
-    
-    for (let i = 1; i <= totalPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      
-      // Group text items by Y position (same line)
-      const lines = [];
-      const items = textContent.items;
-      let currentLine = { y: -1, text: '' };
-      
-      for (const item of items) {
-        const y = Math.round(item.transform[5] * 10) / 10;
-        const x = item.transform[4];
-        if (currentLine.y === -1) {
-          currentLine.y = y;
-          currentLine.text = item.str;
-        } else if (Math.abs(y - currentLine.y) < 3) {
-          const prevX = currentLine.prevX || x;
-          const gap = x - prevX;
-          currentLine.text += (gap > 5 && currentLine.text) ? ' ' + item.str : item.str;
-          currentLine.prevX = x;
-        } else {
-          if (currentLine.text.trim()) lines.push(currentLine.text.trim());
-          currentLine = { y, text: item.str, prevX: x };
-        }
-      }
-      if (currentLine.text.trim()) lines.push(currentLine.text.trim());
-      
-      const pageText = lines.join('\n');
-      
-      // Split into paragraphs
-      let paragraphs = pageText
-        .split(/\n\s*\n/)
-        .map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
-        .filter(p => p.length > 10);
-      
-      // If too few paragraphs, split by sentence endings
-      if (paragraphs.length < 2) {
-        paragraphs = pageText
-          .split(/(?<=[。！？.!?])\s+/)
-          .map(p => p.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim())
-          .filter(p => p.length > 8);
-      }
-      
-      for (const para of paragraphs) {
-        const lang = detectLang(para);
-        const chunks = splitByLanguage(para);
-        allSegments.push({
-          text: para,
-          lang,        // primary language for display
-          pageNum: i,
-          chunks,      // sub-chunks for voice switching
-        });
-      }
+    // Handle Google Drive share links
+    let downloadUrl = url;
+    const match = url.match(/drive\.google\.com\/.*[?&]id=([^&#]+)/) || url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (match) {
+      const fileId = match[1];
+      downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
     }
-
-    state.segments = allSegments;
-    state.currentIdx = 0;
-
-    try { localStorage.setItem('pdf_last_file', file.name); } catch {}
-
-    renderSegments();
-    showControls();
-    showStatus(`✅ ${totalPages} 頁, ${allSegments.length} 段落`);
-    hideLoading();
     
-    initVoices();
+    const resp = await fetch(downloadUrl);
+    if (!resp.ok) throw new Error('下載失敗: HTTP ' + resp.status);
+    const blob = await resp.blob();
+    if (blob.type !== 'application/pdf' && !url.endsWith('.pdf')) {
+      // Try to detect if it's a PDF from the content
+    }
+    const file = new File([blob], url.split('/').pop() || 'document.pdf', { type: 'application/pdf' });
+    await importFile(file);
   } catch (e) {
     hideLoading();
-    showStatus('❌ PDF 解析失敗: ' + e.message, true);
-    console.error(e);
+    alert('❌ 下載失敗: ' + e.message);
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LANGUAGE DETECTION (per-segment display label)
+//  GOOGLE DRIVE PICKER
 // ═══════════════════════════════════════════════════════════════
-function detectLang(text) {
-  const zhCount = (text.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g) || []).length;
-  const totalChars = text.replace(/\s/g, '').length;
-  if (totalChars === 0) return 'en';
-  return (zhCount / totalChars) > 0.3 ? 'zh' : 'en';
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  VOICES
-// ═══════════════════════════════════════════════════════════════
-function initVoices() {
-  const voices = SYNTH.getVoices();
-  if (voices.length > 0) {
-    populateVoiceSelectors(voices);
+function openDrivePicker() {
+  const apiKey = document.getElementById('googleApiKey').value.trim();
+  if (!apiKey) {
+    showStatus('⚠️ 請先在設定中填入 Google API Key');
+    document.getElementById('settingsPanel').classList.add('show');
+    return;
   }
-  SYNTH.onvoiceschanged = () => {
-    populateVoiceSelectors(SYNTH.getVoices());
+  
+  // Dynamically load Google Picker
+  const script = document.createElement('script');
+  script.src = 'https://apis.google.com/js/api.js';
+  script.onload = () => {
+    gapi.load('picker', () => {
+      const view = new google.picker.View(google.picker.ViewId.DOCS);
+      view.setMimeTypes('application/pdf');
+      const picker = new google.picker.PickerBuilder()
+        .enableFeature(google.picker.Feature.NAV_HIDDEN)
+        .setAppId(apiKey)
+        .setOAuthToken(apiKey) // Simplified; real OAuth needs token
+        .addView(view)
+        .addView(new google.picker.DocsUploadView())
+        .setCallback(async (data) => {
+          if (data.action === google.picker.Action.PICKED) {
+            const doc = data.docs[0];
+            if (doc.mimeType === 'application/pdf') {
+              showLoading('☁️ 從 Drive 下載...');
+              try {
+                const resp = await fetch(`https://www.googleapis.com/drive/v3/files/${doc.id}?alt=media`, {
+                  headers: { 'Authorization': `Bearer ${apiKey}` }
+                });
+                const blob = await resp.blob();
+                const file = new File([blob], doc.name, { type: 'application/pdf' });
+                const bookId = await importFile(file);
+              } catch(e) {
+                hideLoading();
+                alert('❌ 下載失敗: ' + e.message);
+              }
+            }
+          }
+        })
+        .build();
+      picker.setVisible(true);
+    });
   };
-  setTimeout(() => {
-    const v = SYNTH.getVoices();
-    if (v.length > 0) populateVoiceSelectors(v);
-  }, 1000);
+  document.body.appendChild(script);
 }
 
-function populateVoiceSelectors(voices) {
-  const zhSelect = document.getElementById('voiceZhSelect');
-  const enSelect = document.getElementById('voiceEnSelect');
+// ═══════════════════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════════════════
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('show');
+}
+
+function loadSettings() {
+  try {
+    state.openaiKey = localStorage.getItem('vb_openai_key') || '';
+    state.ttsEngine = localStorage.getItem('vb_engine') || 'openai';
+    state.openaiVoiceZh = localStorage.getItem('vb_voice_zh') || 'nova';
+    state.openaiVoiceEn = localStorage.getItem('vb_voice_en') || 'shimmer';
+  } catch {}
   
-  // Save current selections
-  const prevZh = zhSelect.value;
-  const prevEn = enSelect.value;
+  document.getElementById('openaiKeyInput').value = state.openaiKey;
+  document.getElementById('ttsEngine').value = state.ttsEngine;
+  document.getElementById('openaiVoiceZh').value = state.openaiVoiceZh;
+  document.getElementById('openaiVoiceEn').value = state.openaiVoiceEn;
+  document.getElementById('defaultSource').value = localStorage.getItem('vb_default_source') || 'picker';
+  document.getElementById('googleApiKey').value = localStorage.getItem('vb_google_key') || '';
   
-  zhSelect.innerHTML = '';
-  enSelect.innerHTML = '';
+  onEngineChange();
+}
+
+function saveOpenAIKey() {
+  state.openaiKey = document.getElementById('openaiKeyInput').value.trim();
+  try { localStorage.setItem('vb_openai_key', state.openaiKey); } catch {}
+}
+
+function onEngineChange() {
+  state.ttsEngine = document.getElementById('ttsEngine').value;
+  try { localStorage.setItem('vb_engine', state.ttsEngine); } catch {}
+  const keyRow = document.getElementById('openaiKeyRow');
+  keyRow.style.display = state.ttsEngine === 'openai' ? 'flex' : 'none';
   
-  // Default / auto option
-  zhSelect.innerHTML = '<option value="auto">🤖 自動挑選</option>';
-  enSelect.innerHTML = '<option value="auto">🤖 自動挑選</option>';
+  // Update voice panels
+  if (state.ttsEngine === 'openai') {
+    state.openaiVoiceZh = document.getElementById('openaiVoiceZh').value;
+    state.openaiVoiceEn = document.getElementById('openaiVoiceEn').value;
+    try { localStorage.setItem('vb_voice_zh', state.openaiVoiceZh); } catch {}
+    try { localStorage.setItem('vb_voice_en', state.openaiVoiceEn); } catch {}
+  }
+}
+
+function saveSettings() {
+  state.openaiVoiceZh = document.getElementById('openaiVoiceZh').value;
+  state.openaiVoiceEn = document.getElementById('openaiVoiceEn').value;
+  const src = document.getElementById('defaultSource').value;
+  try {
+    localStorage.setItem('vb_voice_zh', state.openaiVoiceZh);
+    localStorage.setItem('vb_voice_en', state.openaiVoiceEn);
+    localStorage.setItem('vb_default_source', src);
+    localStorage.setItem('vb_google_key', document.getElementById('googleApiKey').value.trim());
+  } catch {}
+}
+
+async function clearLibrary() {
+  if (!confirm('確定清空整個書庫？所有已儲存 PDF 將被刪除。')) return;
+  const books = await dbGetAllBooks();
+  for (const b of books) await dbDeleteBook(b.id);
+  renderBookshelf();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  OPEN & PLAY BOOK
+// ═══════════════════════════════════════════════════════════════
+async function openBook(id) {
+  showLoading('📖 載入中...');
+  const books = await dbGetAllBooks();
+  const book = books.find(b => b.id === id);
+  if (!book) { hideLoading(); return; }
   
-  // Group voices by language
-  const zhVoices = voices.filter(v => v.lang.startsWith('zh'));
-  const enVoices = voices.filter(v => v.lang.startsWith('en'));
+  state.pdfId = book.id;
+  state.pdfName = book.title + '.pdf';
   
-  // Add separator if mixed
-  const addVoiceOptions = (select, voiceList) => {
-    // Group by lang
-    const grouped = {};
-    for (const v of voiceList) {
-      const key = v.lang;
-      if (!grouped[key]) grouped[key] = [];
-      grouped[key].push(v);
+  let pdfData = book.pdfData;
+  if (!pdfData) pdfData = await dbGetPdfData(id);
+  
+  if (!pdfData) { hideLoading(); alert('❌ PDF 資料遺失'); return; }
+  
+  state.pdfBytes = pdfData;
+  document.getElementById('fileName').textContent = book.title;
+  
+  // Update engine badge
+  const badge = document.getElementById('engineBadge');
+  badge.textContent = state.ttsEngine === 'openai' ? '🤖 AI' : '📱 瀏覽器';
+  badge.className = 'engine-badge ' + (state.ttsEngine === 'openai' ? 'ai' : 'browser');
+  
+  // Show player
+  document.getElementById('bookshelfView').style.display = 'none';
+  document.getElementById('playerView').style.display = 'block';
+  
+  try {
+    const pdf = await pdfjsLib.getDocument({ data: pdfData, useSystemFonts: true }).promise;
+    await parsePDF(pdf);
+    renderSegments();
+    showStatus(`✅ ${book.segments || state.segments.length} 段落 · ${pdf.numPages} 頁`);
+    updateVoiceDisplay();
+    
+    // Restore progress
+    if (book.progress?.currentIdx) {
+      state.currentIdx = Math.min(book.progress.currentIdx, state.segments.length - 1);
+      state.speed = book.progress.speed || 1.0;
+      document.getElementById('speedRange').value = state.speed;
+      document.getElementById('speedDisplay').textContent = state.speed + '×';
+      renderSegments();
     }
     
-    for (const [lang, vlist] of Object.entries(grouped)) {
-      const optGroup = document.createElement('optgroup');
-      optGroup.label = lang;
-      for (const v of vlist) {
-        const opt = document.createElement('option');
-        opt.value = v.name;
-        opt.textContent = `${v.name} ${v.localService ? '📱' : '☁️'}`;
-        optGroup.appendChild(opt);
+    hideLoading();
+  } catch (e) {
+    hideLoading();
+    showStatus('❌ 解析失敗: ' + e.message, true);
+  }
+}
+
+async function parsePDF(pdf) {
+  const totalPages = pdf.numPages;
+  let allSegments = [];
+  
+  for (let i = 1; i <= totalPages; i++) {
+    const page = await pdf.getPage(i);
+    const textContent = await page.getTextContent();
+    
+    const lines = [];
+    const items = textContent.items;
+    let currentLine = { y: -1, text: '' };
+    
+    for (const item of items) {
+      const y = Math.round(item.transform[5] * 10) / 10;
+      if (currentLine.y === -1) { currentLine.y = y; currentLine.text = item.str; }
+      else if (Math.abs(y - currentLine.y) < 3) {
+        currentLine.text += (currentLine.text ? ' ' : '') + item.str;
+      } else {
+        if (currentLine.text.trim()) lines.push(currentLine.text.trim());
+        currentLine = { y, text: item.str };
       }
-      select.appendChild(optGroup);
     }
-  };
-  
-  addVoiceOptions(zhSelect, zhVoices);
-  addVoiceOptions(enSelect, enVoices);
-  
-  // Restore selections if possible
-  if (prevZh && [...zhSelect.options].some(o => o.value === prevZh)) zhSelect.value = prevZh;
-  if (prevEn && [...enSelect.options].some(o => o.value === prevEn)) enSelect.value = prevEn;
-  
-  document.getElementById('voicePanel').style.display = 'block';
-  
-  // Apply
-  applyVoiceSelection();
-}
-
-function applyVoiceSelection() {
-  const zhName = document.getElementById('voiceZhSelect').value;
-  const enName = document.getElementById('voiceEnSelect').value;
-  const allVoices = SYNTH.getVoices();
-  
-  if (zhName && zhName !== 'auto') {
-    state.voices.zh = allVoices.find(v => v.name === zhName) || null;
-  } else {
-    // Auto: pick best zh-TW
-    state.voices.zh = allVoices.find(v => v.lang.startsWith('zh-TW') && v.localService)
-      || allVoices.find(v => v.lang.startsWith('zh-TW'))
-      || allVoices.find(v => v.lang.startsWith('zh'))
-      || null;
+    if (currentLine.text.trim()) lines.push(currentLine.text.trim());
+    
+    let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 10);
+    if (paragraphs.length < 2) {
+      paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 8);
+    }
+    
+    for (const para of paragraphs) {
+      const lang = detectLang(para);
+      allSegments.push({ text: para, lang, pageNum: i, chunks: splitByLanguage(para) });
+    }
   }
   
-  if (enName && enName !== 'auto') {
-    state.voices.en = allVoices.find(v => v.name === enName) || null;
-  } else {
-    // Auto: pick best en-US
-    state.voices.en = allVoices.find(v => v.lang.startsWith('en-US') && v.name.includes('Premium'))
-      || allVoices.find(v => v.lang.startsWith('en-US') && v.localService)
-      || allVoices.find(v => v.lang.startsWith('en-US'))
-      || allVoices.find(v => v.lang.startsWith('en'))
-      || null;
+  state.segments = allSegments;
+  state.currentIdx = 0;
+  
+  // Update book progress info
+  const books = await dbGetAllBooks();
+  const book = books.find(b => b.id === state.pdfId);
+  if (book) {
+    book.segments = allSegments.length;
+    book.pageCount = totalPages;
+    await dbSaveBook(book);
   }
-  
-  // Update display
-  const zhLabel = state.voices.zh ? `${state.voices.zh.name}` : '❌ 無中文語音';
-  const enLabel = state.voices.en ? `${state.voices.en.name}` : '❌ 無英文語音';
-  document.getElementById('voiceZhSelect').title = zhLabel;
-  document.getElementById('voiceEnSelect').title = enLabel;
-  
-  console.log('🎤 Voices set:', { zh: state.voices.zh?.name, en: state.voices.en?.name });
 }
 
-function onVoiceSelectChange() {
-  applyVoiceSelection();
-  // If currently playing, restart current segment with new voice
-  if (state.isPlaying && SYNTH.speaking) {
+// ═══════════════════════════════════════════════════════════════
+//  LANGUAGE & SPLITTER
+// ═══════════════════════════════════════════════════════════════
+function detectLang(text) {
+  const zh = (text.match(/[\u4e00-\u9fff\u3000-\u303f\uff00-\uffef]/g) || []).length;
+  const total = text.replace(/\s/g,'').length;
+  return total === 0 ? 'en' : (zh/total > 0.3 ? 'zh' : 'en');
+}
+
+function isZH(ch) {
+  const c = ch.charCodeAt(0);
+  return (c>=0x4E00&&c<=0x9FFF)||(c>=0x3000&&c<=0x303F)||(c>=0xFF00&&c<=0xFFEF)||(c>=0x3100&&c<=0x312F);
+}
+function isEN(ch) {
+  const c = ch.charCodeAt(0);
+  return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||(c>=0x0030&&c<=0x0039)||'.,!?\'"-%/()$€&@#*~=:;+°'.includes(ch);
+}
+
+function splitByLanguage(text) {
+  if (!text) return [];
+  const chunks = [];
+  let cur = { text: '', lang: null };
+  for (const ch of text) {
+    const l = isZH(ch) ? 'zh' : isEN(ch) ? 'en' : null;
+    if (l !== null) {
+      if (cur.lang === null) { cur.lang = l; cur.text = ch; }
+      else if (l === cur.lang) cur.text += ch;
+      else { if (cur.text.trim()) chunks.push({text:cur.text.trim(),lang:cur.lang}); cur = {text:ch,lang:l}; }
+    } else cur.text += ch;
+  }
+  if (cur.text.trim()) chunks.push({text:cur.text.trim(),lang:cur.lang||'en'});
+  // Merge short
+  if (chunks.length<=1) return chunks;
+  const res = [];
+  for (let i=0;i<chunks.length;i++) {
+    const raw = chunks[i].text.replace(/\s/g,'');
+    if (raw.length<=2 && res.length>0) { res[res.length-1].text += ' '+chunks[i].text; }
+    else res.push(chunks[i]);
+  }
+  return res;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TTS — OpenAI
+// ═══════════════════════════════════════════════════════════════
+function updateVoiceDisplay() {
+  if (state.ttsEngine === 'openai') {
+    document.getElementById('voiceZhDisplay').textContent = state.openaiVoiceZh.charAt(0).toUpperCase() + state.openaiVoiceZh.slice(1);
+    document.getElementById('voiceEnDisplay').textContent = state.openaiVoiceEn.charAt(0).toUpperCase() + state.openaiVoiceEn.slice(1);
+  } else {
+    const v = state.voices;
+    document.getElementById('voiceZhDisplay').textContent = v.zh?.name || '自動';
+    document.getElementById('voiceEnDisplay').textContent = v.en?.name || '自動';
+  }
+  document.getElementById('voicePanel').style.display = 'flex';
+  document.getElementById('voicePanel').style.flexDirection = 'column';
+}
+
+async function speakChunk_OpenAI(text, lang) {
+  const voice = lang === 'zh' ? state.openaiVoiceZh : state.openaiVoiceEn;
+  const key = state.openaiKey;
+  
+  if (!key) {
+    showStatus('⚠️ 請在設定中填入 OpenAI API Key', true);
+    return false;
+  }
+  
+  try {
+    const resp = await fetch('/api/tts', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-OpenAI-Key': key,
+      },
+      body: JSON.stringify({
+        text: text,
+        voice: voice,
+        speed: state.speed,
+        model: 'tts-1-hd'
+      }),
+    });
+    
+    if (!resp.ok) {
+      const err = await resp.text();
+      showStatus('❌ OpenAI 錯誤: ' + err, true);
+      return false;
+    }
+    
+    const blob = await resp.blob();
+    const url = URL.createObjectURL(blob);
+    
+    return new Promise((resolve) => {
+      if (audioElement) { audioElement.pause(); audioElement = null; }
+      const audio = new Audio(url);
+      audioElement = audio;
+      audio.onended = () => { URL.revokeObjectURL(url); resolve(true); };
+      audio.onerror = () => { URL.revokeObjectURL(url); resolve(false); };
+      audio.play().catch(() => resolve(false));
+    });
+  } catch (e) {
+    showStatus('❌ 連線錯誤: ' + e.message, true);
+    return false;
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TTS — Browser (SpeechSynthesis fallback)
+// ═══════════════════════════════════════════════════════════════
+function initBrowserVoices() {
+  const v = SYNTH.getVoices();
+  if (v.length > 0) pickBrowserVoices(v);
+  SYNTH.onvoiceschanged = () => pickBrowserVoices(SYNTH.getVoices());
+  setTimeout(() => { const w=SYNTH.getVoices(); if(w.length>0) pickBrowserVoices(w); }, 1000);
+}
+
+function pickBrowserVoices(voices) {
+  state.voices.zh = voices.find(v=>v.lang.startsWith('zh-TW')&&v.localService)||voices.find(v=>v.lang.startsWith('zh-TW'))||voices.find(v=>v.lang.startsWith('zh'))||null;
+  state.voices.en = voices.find(v=>v.lang.startsWith('en-US')&&v.name.includes('Premium'))||voices.find(v=>v.lang.startsWith('en-US')&&v.localService)||voices.find(v=>v.lang.startsWith('en-US'))||voices.find(v=>v.lang.startsWith('en'))||null;
+  updateVoiceDisplay();
+}
+
+function speakChunk_Browser(text, lang) {
+  return new Promise((resolve) => {
     SYNTH.cancel();
-    startChunkQueue();
-  }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = lang === 'zh' ? 'zh-TW' : 'en-US';
+    u.rate = state.speed;
+    u.volume = 1;
+    u.voice = lang === 'zh' ? state.voices.zh : state.voices.en;
+    u.onend = () => resolve(true);
+    u.onerror = () => resolve(false);
+    SYNTH.speak(u);
+    utterance = u;
+    // Fallback polling
+    const poll = setInterval(() => {
+      if (!SYNTH.speaking && !SYNTH.pending) { clearInterval(poll); resolve(true); }
+    }, 2000);
+    setTimeout(() => { clearInterval(poll); resolve(true); }, 30000);
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  TTS — Multi-voice chaining for mixed-language segments
+//  PLAYBACK ENGINE
 // ═══════════════════════════════════════════════════════════════
-
-/**
- * Queue up sub-chunks for the current segment and start speaking.
- */
-function startChunkQueue() {
+async function startChunkQueue() {
   const seg = state.segments[state.currentIdx];
-  if (!seg) {
-    finishPlayback();
-    return;
-  }
+  if (!seg) { finishPlayback(); return; }
   
-  // Use chunks (if available) or wrap whole text as one chunk
   state.chunkQueue = (seg.chunks && seg.chunks.length > 0) ? seg.chunks : [{ text: seg.text, lang: seg.lang }];
   state.chunkIdx = 0;
-  
-  speakNextChunk();
+  await speakNextChunk();
 }
 
-function speakNextChunk() {
-  if (state.chunkIdx >= state.chunkQueue.length) {
-    // All chunks done — advance to next segment
-    advanceToNext();
-    return;
-  }
-  
-  const chunk = state.chunkQueue[state.chunkIdx];
-  if (!chunk || !chunk.text.trim()) {
-    state.chunkIdx++;
-    speakNextChunk();
-    return;
-  }
-  
-  const voice = chunk.lang === 'zh' ? state.voices.zh : state.voices.en;
-  const lang = chunk.lang === 'zh' ? 'zh-TW' : 'en-US';
-  
-  SYNTH.cancel();
-  
-  utterance = new SpeechSynthesisUtterance(chunk.text);
-  utterance.lang = lang;
-  utterance.rate = state.speed;
-  utterance.volume = 1;
-  if (voice) utterance.voice = voice;
-  
-  utterance.onstart = () => {
+async function speakNextChunk() {
+  while (state.chunkIdx < state.chunkQueue.length) {
+    const chunk = state.chunkQueue[state.chunkIdx];
+    if (!chunk || !chunk.text.trim()) { state.chunkIdx++; continue; }
+    
     updateChunkHighlight(state.currentIdx, state.chunkIdx);
-    const seg = state.segments[state.currentIdx];
-    showStatus(`🇹🇼🇺🇸 第 ${state.currentIdx + 1}/${state.segments.length} 段 · 語音${chunk.lang === 'zh' ? '🇹🇼' : '🇺🇸'}`);
-  };
-  
-  utterance.onend = () => {
-    if (state.isPlaying) {
-      state.chunkIdx++;
-      speakNextChunk();
+    const label = chunk.lang === 'zh' ? '🇹🇼' : '🇺🇸';
+    showStatus(`第 ${state.currentIdx+1}/${state.segments.length} 段 ${label}`);
+    
+    let ok;
+    if (state.ttsEngine === 'openai') {
+      ok = await speakChunk_OpenAI(chunk.text, chunk.lang);
+    } else {
+      ok = await speakChunk_Browser(chunk.text, chunk.lang);
     }
-  };
+    
+    if (!state.isPlaying) return; // paused
+    if (!ok) { /* skip */ }
+    
+    state.chunkIdx++;
+    updateProgress();
+  }
   
-  utterance.onerror = (e) => {
-    console.error('TTS error:', e);
-    if (state.isPlaying) {
-      state.chunkIdx++;
-      speakNextChunk();
-    }
-  };
-  
-  SYNTH.speak(utterance);
-}
-
-function advanceToNext() {
+  // All chunks done — next segment
   state.currentIdx++;
   if (state.currentIdx < state.segments.length) {
-    updateProgress();
-    startChunkQueue();
+    await startChunkQueue();
   } else {
     finishPlayback();
   }
@@ -596,24 +870,15 @@ function finishPlayback() {
   document.getElementById('playIcon').className = 'fas fa-play';
   showStatus('🏁 朗讀完成！');
   releaseWakeLock();
-  stopTTSWatchdog();
+  saveProgress();
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  TTS WATCHDOG (fallback for headless onend bugs)
-// ═══════════════════════════════════════════════════════════════
-let ttsWatchdog = null;
 function startTTSWatchdog() {
   stopTTSWatchdog();
   ttsWatchdog = setInterval(() => {
-    if (state.isPlaying && state.segments.length > 0 && !SYNTH.speaking && !SYNTH.pending) {
-      // TTS stopped unexpectedly — try next chunk or segment
+    if (state.isPlaying && state.ttsEngine === 'browser' && !SYNTH.speaking && !SYNTH.pending) {
       state.chunkIdx++;
-      if (state.chunkIdx < state.chunkQueue.length) {
-        speakNextChunk();
-      } else {
-        advanceToNext();
-      }
+      if (state.chunkIdx < state.chunkQueue.length) speakNextChunk();
     }
   }, 500);
 }
@@ -626,22 +891,16 @@ function stopTTSWatchdog() {
 // ═══════════════════════════════════════════════════════════════
 function togglePlay() {
   if (state.segments.length === 0) return;
-  if (state.isPlaying) {
-    pausePlayback();
-  } else {
-    startPlayback();
-  }
+  if (state.isPlaying) { pausePlayback(); }
+  else { startPlayback(); }
 }
 
-function startPlayback() {
+async function startPlayback() {
   state.isPlaying = true;
   document.getElementById('playIcon').className = 'fas fa-pause';
   
-  if (SYNTH.paused) {
-    SYNTH.resume();
-  } else {
-    startChunkQueue();
-  }
+  if (audioElement) { audioElement.play(); }
+  else { await startChunkQueue(); }
   
   requestWakeLock();
   startTTSWatchdog();
@@ -651,8 +910,10 @@ function pausePlayback() {
   state.isPlaying = false;
   document.getElementById('playIcon').className = 'fas fa-play';
   
-  if (SYNTH.speaking) {
-    if (!SYNTH.paused) SYNTH.pause();
+  if (state.ttsEngine === 'browser') {
+    if (SYNTH.speaking && !SYNTH.paused) SYNTH.pause();
+  } else {
+    if (audioElement) { audioElement.pause(); }
   }
   
   releaseWakeLock();
@@ -662,14 +923,16 @@ function pausePlayback() {
 function stopPlayback() {
   state.isPlaying = false;
   document.getElementById('playIcon').className = 'fas fa-play';
-  SYNTH.cancel();
+  if (state.ttsEngine === 'browser') SYNTH.cancel();
+  else { if (audioElement) { audioElement.pause(); audioElement = null; } }
   releaseWakeLock();
 }
 
 function nextSegment() {
   if (state.currentIdx < state.segments.length - 1) {
     state.currentIdx++;
-    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    stopPlayback(); 
+    if (state.isPlaying) startChunkQueue();
     else { updateTextHighlight(state.currentIdx); updateProgress(); }
   }
 }
@@ -677,7 +940,8 @@ function nextSegment() {
 function prevSegment() {
   if (state.currentIdx > 0) {
     state.currentIdx--;
-    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    stopPlayback();
+    if (state.isPlaying) startChunkQueue();
     else { updateTextHighlight(state.currentIdx); updateProgress(); }
   }
 }
@@ -685,10 +949,6 @@ function prevSegment() {
 function onSpeedChange() {
   state.speed = parseFloat(document.getElementById('speedRange').value);
   document.getElementById('speedDisplay').textContent = state.speed + '×';
-  if (state.isPlaying && SYNTH.speaking) {
-    SYNTH.cancel();
-    startChunkQueue();
-  }
 }
 
 function seekProgress(e) {
@@ -697,40 +957,26 @@ function seekProgress(e) {
   const idx = Math.floor(pct * state.segments.length);
   if (idx >= 0 && idx < state.segments.length) {
     state.currentIdx = idx;
-    if (state.isPlaying) { SYNTH.cancel(); startChunkQueue(); }
+    stopPlayback();
+    if (state.isPlaying) startChunkQueue();
     else { updateTextHighlight(idx); updateProgress(); }
   }
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  WAKE LOCK
+//  WAKE LOCK & UI
 // ═══════════════════════════════════════════════════════════════
 async function requestWakeLock() {
   try {
     if ('wakeLock' in navigator) {
       state.wakeLock = await navigator.wakeLock.request('screen');
-      state.wakeLock.addEventListener('release', () => {
-        document.getElementById('wakeLockBadge').className = 'wake-lock-badge';
-      });
-      document.getElementById('wakeLockBadge').className = 'wake-lock-badge active';
+      state.wakeLock.onrelease = () => document.getElementById('wakeLockBadge').className = 'wake-badge';
+      document.getElementById('wakeLockBadge').className = 'wake-badge active';
     }
-  } catch(e) { console.log('Wake lock:', e); }
+  } catch(e) {}
 }
 function releaseWakeLock() {
-  if (state.wakeLock) {
-    state.wakeLock.release();
-    state.wakeLock = null;
-    document.getElementById('wakeLockBadge').className = 'wake-lock-badge';
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-//  UI UPDATES
-// ═══════════════════════════════════════════════════════════════
-function showControls() {
-  document.getElementById('controls').style.display = 'block';
-  document.getElementById('textDisplay').style.display = 'block';
-  document.getElementById('uploadZone').style.display = 'none';
+  if (state.wakeLock) { state.wakeLock.release(); state.wakeLock = null; }
 }
 
 function showStatus(msg, isError) {
@@ -743,82 +989,67 @@ function showLoading(msg) {
   document.getElementById('loadingMsg').textContent = msg;
   document.getElementById('loadingOverlay').classList.add('show');
 }
-
 function hideLoading() {
   document.getElementById('loadingOverlay').classList.remove('show');
 }
 
 function updateProgress() {
   const total = state.segments.length;
-  const current = state.currentIdx + 1;
+  const cur = state.currentIdx + 1;
   const pct = total > 0 ? (state.currentIdx / total) * 100 : 0;
   document.getElementById('progressBar').style.width = pct + '%';
-  document.getElementById('currentPos').textContent = `第 ${current} 段 / 共 ${total} 段`;
+  document.getElementById('currentPos').textContent = `第 ${cur} 段 / 共 ${total} 段`;
   
-  let remainingChars = 0;
-  for (let i = state.currentIdx; i < total; i++) {
-    remainingChars += state.segments[i].text.length;
-  }
-  const estSeconds = Math.round(remainingChars / (state.speed * 10));
-  const mins = Math.floor(estSeconds / 60);
-  const secs = estSeconds % 60;
-  document.getElementById('timeRemain').textContent = `剩餘 ${mins}:${secs.toString().padStart(2, '0')}`;
+  let rem = 0;
+  for (let i = state.currentIdx; i < total; i++) rem += state.segments[i].text.length;
+  const est = Math.round(rem / (state.speed * 10));
+  document.getElementById('timeRemain').textContent = `剩餘 ${Math.floor(est/60)}:${String(est%60).padStart(2,'0')}`;
 }
 
-function updateTextHighlight(segIdx) {
-  const content = document.getElementById('textContent');
+function updateTextHighlight(idx) {
+  const c = document.getElementById('textContent');
   let html = '';
   state.segments.forEach((seg, i) => {
-    const isActive = i === segIdx;
-    const marker = isActive ? '▶ ' : '';
-    
+    const act = i === idx;
+    const m = act ? '▶ ' : '';
     if (seg.chunks && seg.chunks.length > 1) {
-      // Display with per-language coloring
-      let innerHtml = marker;
-      for (const chunk of seg.chunks) {
-        const langCls = chunk.lang === 'zh' ? 'zh-text' : 'en-text';
-        innerHtml += `<span class="${langCls}">${escapeHtml(chunk.text)}</span> `;
-      }
-      html += `<div class="para ${isActive ? 'active' : ''}">${innerHtml}</div>`;
+      let ih = m;
+      seg.chunks.forEach(ch => { ih += `<span class="${ch.lang==='zh'?'zh-text':'en-text'}">${escapeHtml(ch.text)}</span> `; });
+      html += `<div class="para ${act?'active':''}">${ih}</div>`;
     } else {
-      const langCls = seg.lang === 'zh' ? 'zh-text' : 'en-text';
-      html += `<div class="para ${isActive ? 'active' : ''}"><span class="${langCls}">${marker}${escapeHtml(seg.text)}</span></div>`;
+      const lc = seg.lang === 'zh' ? 'zh-text' : 'en-text';
+      html += `<div class="para ${act?'active':''}"><span class="${lc}">${m}${escapeHtml(seg.text)}</span></div>`;
     }
   });
-  content.innerHTML = html;
-  
-  const currentEl = content.querySelector('.active');
-  if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  c.innerHTML = html;
+  const cur = c.querySelector('.active');
+  if (cur) cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function updateChunkHighlight(segIdx, chunkIdx) {
-  // Update progress + highlight
   updateProgress();
-  
-  const content = document.getElementById('textContent');
+  const c = document.getElementById('textContent');
   let html = '';
   state.segments.forEach((seg, i) => {
-    const isActive = i === segIdx;
-    const marker = isActive ? '▶ ' : '';
-    
+    const act = i === segIdx;
+    const m = act ? '▶ ' : '';
     if (seg.chunks && seg.chunks.length > 1) {
-      let innerHtml = marker;
-      seg.chunks.forEach((chunk, ci) => {
-        const langCls = chunk.lang === 'zh' ? 'zh-text' : 'en-text';
-        const speakingCls = (isActive && ci === chunkIdx) ? 'speaking' : '';
-        innerHtml += `<span class="${langCls} sub-chunk ${speakingCls}">${escapeHtml(chunk.text)}</span> `;
+      let ih = m;
+      seg.chunks.forEach((ch, ci) => {
+        const lc = ch.lang === 'zh' ? 'zh-text' : 'en-text';
+        const sp = act && ci === chunkIdx ? 'speaking-chunk' : '';
+        ih += `<span class="${lc} sub-chunk ${sp}">${escapeHtml(ch.text)}</span> `;
       });
-      html += `<div class="para ${isActive ? 'active' : ''}">${innerHtml}</div>`;
+      html += `<div class="para ${act?'active':''}">${ih}</div>`;
     } else {
-      const langCls = seg.lang === 'zh' ? 'zh-text' : 'en-text';
-      const speakingCls = isActive ? 'speaking' : '';
-      html += `<div class="para ${isActive ? 'active' : ''}"><span class="${langCls} ${speakingCls}">${marker}${escapeHtml(seg.text)}</span></div>`;
+      const lc = seg.lang === 'zh' ? 'zh-text' : 'en-text';
+      const sp = act ? 'speaking-chunk' : '';
+      html += `<div class="para ${act?'active':''}"><span class="${lc} ${sp}">${m}${escapeHtml(seg.text)}</span></div>`;
     }
   });
-  content.innerHTML = html;
-  
-  const currentEl = content.querySelector('.active');
-  if (currentEl) currentEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  c.innerHTML = html;
+  const cur = c.querySelector('.active');
+  if (cur) cur.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 function renderSegments() {
@@ -826,85 +1057,50 @@ function renderSegments() {
   updateTextHighlight(state.currentIdx);
 }
 
-function reparsePDF() {
-  if (state.pdfBytes) {
-    stopPlayback();
-    state.currentIdx = 0;
-    const fakeFile = new File([state.pdfBytes], state.pdfName, { type: 'application/pdf' });
-    loadPDF(fakeFile);
-  }
-}
-
-function resetApp() {
-  stopPlayback();
-  state = { segments: [], currentIdx: 0, chunkQueue: [], chunkIdx: 0, isPlaying: false, speed: 1.0, pdfName: '', pdfBytes: null, voices: state.voices, wakeLock: null };
-  document.getElementById('controls').style.display = 'none';
-  document.getElementById('textDisplay').style.display = 'none';
-  document.getElementById('uploadZone').style.display = 'block';
-  document.getElementById('fileInfo').style.display = 'none';
-  document.getElementById('fileInput').value = '';
-  showStatus('請選擇 PDF 檔案開始聆聽');
-}
-
 function escapeHtml(s) {
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-function formatSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/1024/1024).toFixed(1) + ' MB';
+// ═══════════════════════════════════════════════════════════════
+//  SAVE PROGRESS
+// ═══════════════════════════════════════════════════════════════
+async function saveProgress() {
+  if (!state.pdfId || state.segments.length === 0) return;
+  const books = await dbGetAllBooks();
+  const book = books.find(b => b.id === state.pdfId);
+  if (book) {
+    book.lastRead = Date.now();
+    book.progress = { currentIdx: state.currentIdx, speed: state.speed };
+    await dbSaveBook(book);
+  }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  KEYBOARD SHORTCUTS
-// ═══════════════════════════════════════════════════════════════
-document.addEventListener('keydown', (e) => {
-  if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-  if (e.code === 'ArrowRight') nextSegment();
-  if (e.code === 'ArrowLeft') prevSegment();
-});
+// Auto-save periodically
+setInterval(() => {
+  if (state.pdfId && state.segments.length > 0) saveProgress();
+}, 10000);
 
 // ═══════════════════════════════════════════════════════════════
 //  INIT
 // ═══════════════════════════════════════════════════════════════
-if (SYNTH.getVoices().length > 0) {
-  populateVoiceSelectors(SYNTH.getVoices());
-}
-SYNTH.onvoiceschanged = () => {
-  populateVoiceSelectors(SYNTH.getVoices());
-};
+loadSettings();
+initBrowserVoices();
+renderBookshelf();
 
-// Page visibility
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state.isPlaying) {
-    // Keep playing
+// Keyboard
+document.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && document.getElementById('playerView').style.display !== 'none') {
+    e.preventDefault(); togglePlay();
   }
 });
 
-// Save reading position
-setInterval(() => {
-  if (state.segments.length > 0 && state.pdfName) {
-    try {
-      localStorage.setItem('pdf_reader_state', JSON.stringify({
-        pdfName: state.pdfName,
-        currentIdx: state.currentIdx,
-        speed: state.speed,
-        timestamp: Date.now()
-      }));
-    } catch {}
-  }
-}, 5000);
-
-// Restore hint
+// Preload last file hint from old storage
 try {
   const saved = JSON.parse(localStorage.getItem('pdf_reader_state'));
-  if (saved && saved.pdfName) {
-    document.getElementById('statusText').textContent = `📌 上次聆聽: ${saved.pdfName}`;
-  }
+  if (saved?.pdfName) showStatus(`📌 上次: ${saved.pdfName}`);
 } catch {}
 
-console.log('📖 語音書 v2 — 中英自動切換語音');
+console.log('📖 語音書 v3 — 書庫 + AI 高品質朗讀');
 </script>
 </body>
 </html>

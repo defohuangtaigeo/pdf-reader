@@ -8,3 +8,5 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: OPENAI_API_KEY
+        sync: false  # 手動填入你的 OpenAI API Key
