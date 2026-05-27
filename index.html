@@ -591,14 +591,59 @@ async function parsePDF(pdf) {
     }
     if (currentLine.text.trim()) lines.push(currentLine.text.trim());
     
+    // ─── Smart paragraph detection ─────────────────
+    // Strategy 1: Double-newline (standard PDF paragraph breaks)
     let paragraphs = lines.join('\n').split(/\n\s*\n/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 1);
+    
+    // Strategy 2: Line-spacing heuristic — PDF lines with large Y-gap indicate paragraph breaks
+    if (paragraphs.length < 2 && lines.length > 2) {
+      // Rebuild lines with Y-coordinate info to detect spacing-based breaks
+      const lineGroups = [];
+      let curGroup = [];
+      for (let li = 0; li < lines.length; li++) {
+        const line = lines[li];
+        // Lines starting with typical paragraph markers, or short lines that look like headings
+        const isNewPara = /^[「「『（(【]/.test(line) || (line.length < 30 && li > 0 && lines[li-1].endsWith('。')));
+        if (isNewPara && curGroup.length > 0) {
+          lineGroups.push(curGroup.join(' ').trim());
+          curGroup = [line];
+        } else {
+          curGroup.push(line);
+        }
+      }
+      if (curGroup.length > 0) lineGroups.push(curGroup.join(' ').trim());
+      paragraphs = lineGroups.filter(p => p.length > 3);
+    }
+    
+    // Strategy 3: Sentence-ending punctuation (for prose without clear paragraph breaks)
     if (paragraphs.length < 2) {
-      // Fallback 1: split on sentence-ending punctuation
       paragraphs = lines.join('\n').split(/(?<=[。！？.!?])\s+/).map(p => p.replace(/\n/g,' ').replace(/\s+/g,' ').trim()).filter(p => p.length > 1);
     }
+    // Strategy 4: Each line as a paragraph (slides/tables without paragraph breaks)
     if (paragraphs.length < 2) {
-      // Fallback 2: split on newlines (for slides/tables without clear paragraph breaks)
       paragraphs = lines.map(l => l.trim()).filter(l => l.length > 1);
+    }
+    // Strategy 5: Hard split for very long single-paragraph — split at 800 char boundaries
+    if (paragraphs.length === 1 && paragraphs[0].length > 1200) {
+      const bigPara = paragraphs[0];
+      const splitPoints = [];
+      // Find sentence endings as split points
+      const re = /[。！？.!?]/g;
+      let m;
+      while ((m = re.exec(bigPara)) !== null) {
+        if (m.index > 300 && m.index < bigPara.length - 200) splitPoints.push(m.index + 1);
+      }
+      if (splitPoints.length > 0) {
+        paragraphs = [];
+        let start = 0;
+        for (const sp of splitPoints) {
+          const seg = bigPara.substring(start, sp).trim();
+          if (seg.length > 5) paragraphs.push(seg);
+          start = sp;
+        }
+        const last = bigPara.substring(start).trim();
+        if (last.length > 5) paragraphs.push(last);
+      }
     }
     
     for (const para of paragraphs) {
@@ -657,11 +702,28 @@ function splitByLanguage(text) {
   if (chunks.length<=1) return chunks;
   const res = [];
   for (let i=0;i<chunks.length;i++) {
-    const raw = chunks[i].text.replace(/\s/g,'');
+    const raw = chunks[i].text.replace(/\s/g, '');
     if (raw.length<=1 && res.length>0) { res[res.length-1].text += chunks[i].text; }
     else res.push(chunks[i]);
   }
-  return res;
+  // Split any chunk exceeding 2000 chars into smaller chunks (same lang)
+  const final = [];
+  for (const ch of res) {
+    if (ch.text.length > 2000) {
+      const parts = ch.text.match(/[^。！？.!?]+[。！？.!?]?/g) || [ch.text];
+      let buf = '';
+      for (const part of parts) {
+        if ((buf + part).length > 2000) {
+          if (buf) final.push({text: buf.trim(), lang: ch.lang});
+          buf = part;
+        } else buf += part;
+      }
+      if (buf) final.push({text: buf.trim(), lang: ch.lang});
+    } else {
+      final.push(ch);
+    }
+  }
+  return final;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -704,13 +766,15 @@ async function speakChunk_Edge(text, lang, retryCount = 0) {
     text = arabicToChinese(text);
   }
   // Split long text to stay within server limit (4096 chars)
-  if (text.length > 4000) {
+  if (text.length > 2000) {
     const mid = Math.floor(text.length / 2);
     // Split at a natural boundary (space or punctuation)
     let splitAt = text.lastIndexOf(' ', mid);
-    if (splitAt < mid - 200) splitAt = text.lastIndexOf('。', mid);
-    if (splitAt < mid - 200) splitAt = text.lastIndexOf('.', mid);
-    if (splitAt < mid - 200) splitAt = mid;
+    if (splitAt < mid - 100) splitAt = text.lastIndexOf('。', mid);
+    if (splitAt < mid - 100) splitAt = text.lastIndexOf('.', mid);
+    if (splitAt < mid - 100) splitAt = text.lastIndexOf('，', mid);
+    if (splitAt < mid - 100) splitAt = text.lastIndexOf(',', mid);
+    if (splitAt < mid - 100) splitAt = mid;
     const part1 = text.substring(0, splitAt).trim();
     const part2 = text.substring(splitAt).trim();
     if (part1) { const ok = await speakChunk_Edge(part1, lang, retryCount); if (!ok) return false; }
@@ -813,7 +877,13 @@ async function speakNextChunk() {
     
     const ok = await speakChunk_Edge(chunk.text, chunk.lang);
     if (!state.isPlaying) return;
-    if (!ok) { state.chunkIdx++; continue; }
+    if (!ok) {
+      const preview = (chunk.text || '').substring(0, 40);
+      showStatus(`⚠️ 跳過無法朗讀段落: "${preview}..."`, true);
+      ttsFailCount++;
+      state.chunkIdx++;
+      continue;
+    }
     
     state.chunkIdx++;
     updateProgress();
