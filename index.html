@@ -637,7 +637,7 @@ function isEN(ch) {
   const c = ch.charCodeAt(0);
   // Letters A-Z a-z, digits 0-9, common punctuation & symbols
   return (c>=0x0041&&c<=0x005A)||(c>=0x0061&&c<=0x007A)||(c>=0x0030&&c<=0x0039)
-    ||'.,!?\\'"-%/()$€&@#*~=:;+°'.includes(ch)||ch===' '||ch==='\\t';
+    ||'.,!?\\\'"-%/()$€&@#*~=:;+°'.includes(ch)||ch===' '||ch==='\t';
 }
 
 function splitByLanguage(text) {
